@@ -1,0 +1,52 @@
+# Tauri/Rust
+frontend/src-tauri/target/
+target/
+
+# Node
+node_modules/
+*.lock
+
+#  ˝¯Ë
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+.Python
+venv/
+env/
+.venv
+
+# Node/React
+node_modules/
+*.lock
+dist/
+.next/
+
+# Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# User data (Õ≈ «¿√–”∆¿≈Ã!)
+*.db
+*.sqlite
+models/
+downloads/
+agents/

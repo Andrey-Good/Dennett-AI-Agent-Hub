@@ -1,0 +1,33 @@
+{
+  "repo_id": "microsoft/DialoGPT-medium",
+  "modelId": "microsoft/DialoGPT-medium",
+  "author": "microsoft",
+  "sha": "1a2b3c4d5e6f",
+  "lastModified": "2023-12-01T10:30:00Z",
+  "tags": [
+    "pytorch",
+    "transformers",
+    "gpt2",
+    "dialogue",
+    "conversational"
+  ],
+  "pipeline_tag": "text-generation",
+  "downloads": 125000,
+  "likes": 3500,
+  "library_name": "transformers",
+  "private": false,
+  "gated": false,
+  "tags_str": "pytorch,transformers,gpt2,dialogue,conversational",
+  "id": "microsoft/DialoGPT-medium",
+  "siblings": [
+    {
+      "rfilename": "config.json"
+    },
+    {
+      "rfilename": "pytorch_model.bin"
+    },
+    {
+      "rfilename": "README.md"
+    }
+  ]
+}

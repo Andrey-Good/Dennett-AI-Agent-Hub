@@ -1,0 +1,49 @@
+{
+  "id": "microsoft/DialoGPT-medium",
+  "modelId": "microsoft/DialoGPT-medium",
+  "author": "microsoft",
+  "sha": "1a2b3c4d5e6f",
+  "lastModified": "2023-12-01T10:30:00Z",
+  "tags": [
+    "pytorch",
+    "transformers",
+    "gpt2",
+    "dialogue",
+    "conversational",
+    "question-answering"
+  ],
+  "pipeline_tag": "text-generation",
+  "downloads": 125000,
+  "likes": 3500,
+  "library_name": "transformers",
+  "private": false,
+  "gated": false,
+  "tags_str": "pytorch,transformers,gpt2,dialogue,conversational,question-answering",
+  "siblings": [
+    {
+      "rfilename": "config.json",
+      "size": 500
+    },
+    {
+      "rfilename": "pytorch_model.bin",
+      "size": 1542188416
+    },
+    {
+      "rfilename": "README.md",
+      "size": 12000
+    },
+    {
+      "rfilename": "DialoGPT-medium.gguf",
+      "size": 1542188416,
+      "lfs_file": true
+    }
+  ],
+  "config": {
+    "model_type": "gpt2",
+    "n_layer": 24,
+    "n_head": 16,
+    "n_embd": 1024,
+    "n_positions": 1024,
+    "vocab_size": 50257
+  }
+}

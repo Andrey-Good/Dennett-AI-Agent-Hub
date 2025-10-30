@@ -1,0 +1,24 @@
+db_path: "inference_queue.db"
+max_vram_mb: 12288
+worker_count: 2
+
+model_vram_estimates:
+  gemma-3-270m-it-qat-IQ4_NL.gguf: 512
+  Dolphin-X1-8B-Q3_K_L.gguf: 5120
+
+logging:
+  level: "INFO"
+
+gpu_vendor: "auto"
+gpu_monitor_interval_sec: 10
+
+queue:
+  cleanup_ttl_days: 7
+  max_history_size: 10000
+
+gpus:
+  - id: 0
+    vendor: "nvidia"
+    max_utilization: 90
+    max_memory_mb: 16000
+    allow_models: []

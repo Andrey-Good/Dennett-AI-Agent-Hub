@@ -1,0 +1,19 @@
+# backend/requirements-dev.txt
+
+# Форматирование и Линтинг
+ruff
+
+# Тестирование
+pytest
+pytest-cov       # Для отчетов о покрытии
+pytest-asyncio   # Для твоих FastAPI/asyncio тестов
+httpx            # Для тестов API (вместо requests)
+
+# Типизация
+mypy
+
+# Безопасность
+bandit
+
+# Хуки
+pre-commit

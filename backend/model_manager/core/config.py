@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     api_token: str = "your-secure-api-token"
     # In a real application, you would add other configuration variables here.
@@ -9,5 +10,6 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+
 
 settings = Settings()

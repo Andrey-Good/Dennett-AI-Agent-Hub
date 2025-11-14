@@ -1,22 +1,21 @@
-
 import asyncio
 import aiohttp
 import aiofiles
-import hashlib
 import uuid
 from pathlib import Path
 from typing import Dict, Optional, AsyncGenerator
+from fastapi import BackgroundTasks
 from datetime import datetime
 import logging
-import json
 from model_manager.core.models import DownloadStatus, DownloadState
 
 logger = logging.getLogger(__name__)
 
+
 class DownloadManager:
     """Service for managing asynchronous model downloads"""
 
-    def __init__(self, download_dir: str = None, max_concurrent: int = None):
+    def __init__(self, download_dir: Optional[str] = None, max_concurrent: Optional[int] = None):
         """Initialize download manager
 
         Args:
@@ -43,7 +42,7 @@ class DownloadManager:
         # SSE subscribers
         self.subscribers: Dict[str, asyncio.Queue] = {}
 
-    async def start_download(self, repo_id: str, filename: str) -> str:
+    async def start_download(self, repo_id: str, filename: str, background_tasks: BackgroundTasks) -> str:
         """Start downloading a model file
 
         Args:
@@ -69,7 +68,12 @@ class DownloadManager:
             status=DownloadState.PENDING,
             progress_percent=0.0,
             bytes_downloaded=0,
-            started_at=datetime.utcnow()
+            total_bytes=None,
+            download_speed_mbps=None,
+            eta_seconds=None,
+            error_message=None,
+            started_at=datetime.utcnow(),
+            completed_at=None,
         )
 
         self.active_downloads[download_id] = status
@@ -125,7 +129,9 @@ class DownloadManager:
         """Get status of all active downloads"""
         return self.active_downloads.copy()
 
-    async def subscribe_to_updates(self, subscriber_id: str) -> AsyncGenerator[str, None]:
+    async def subscribe_to_updates(
+        self, subscriber_id: str
+    ) -> AsyncGenerator[str, None]:
         """Subscribe to download status updates via SSE
 
         Args:
@@ -135,7 +141,7 @@ class DownloadManager:
             JSON-encoded DownloadStatus updates
         """
         # Create queue for this subscriber
-        queue = asyncio.Queue()
+        queue: asyncio.Queue[DownloadStatus] = asyncio.Queue()
         self.subscribers[subscriber_id] = queue
 
         try:
@@ -164,8 +170,16 @@ class DownloadManager:
         to_remove = []
 
         for download_id, status in self.active_downloads.items():
-            if (status.status in [DownloadState.COMPLETED, DownloadState.FAILED, DownloadState.CANCELLED] and
-                status.completed_at and status.completed_at.timestamp() < cutoff):
+            if (
+                status.status
+                in [
+                    DownloadState.COMPLETED,
+                    DownloadState.FAILED,
+                    DownloadState.CANCELLED,
+                ]
+                and status.completed_at
+                and status.completed_at.timestamp() < cutoff
+            ):
                 to_remove.append(download_id)
 
         for download_id in to_remove:
@@ -187,12 +201,17 @@ class DownloadManager:
                 url = f"https://huggingface.co/{status.repo_id}/resolve/main/{status.filename}"
 
                 # Create target file path
-                target_path = self.download_dir / f"{status.repo_id.replace('/', '_')}_{status.filename}"
+                target_path = (
+                    self.download_dir
+                    / f"{status.repo_id.replace('/', '_')}_{status.filename}"
+                )
                 target_path.parent.mkdir(exist_ok=True, parents=True)
 
                 # Download file
                 async with aiohttp.ClientSession() as session:
-                    await self._download_with_progress(session, url, target_path, status)
+                    await self._download_with_progress(
+                        session, url, target_path, status
+                    )
 
                 # Mark as completed
                 status.status = DownloadState.COMPLETED
@@ -219,11 +238,11 @@ class DownloadManager:
             self.download_tasks.pop(download_id, None)
 
     async def _download_with_progress(
-        self, 
-        session: aiohttp.ClientSession, 
-        url: str, 
-        target_path: Path, 
-        status: DownloadStatus
+        self,
+        session: aiohttp.ClientSession,
+        url: str,
+        target_path: Path,
+        status: DownloadStatus,
     ):
         """Download file with progress tracking"""
 
@@ -232,7 +251,7 @@ class DownloadManager:
                 raise aiohttp.ClientError(f"HTTP {response.status}: {response.reason}")
 
             # Get file size
-            total_size = int(response.headers.get('Content-Length', 0))
+            total_size = int(response.headers.get("Content-Length", 0))
             status.total_bytes = total_size if total_size > 0 else None
 
             # Download with progress tracking
@@ -241,7 +260,7 @@ class DownloadManager:
             start_time = datetime.utcnow()
             last_update = start_time
 
-            async with aiofiles.open(target_path, 'wb') as f:
+            async with aiofiles.open(target_path, "wb") as f:
                 async for chunk in response.content.iter_chunked(chunk_size):
                     await f.write(chunk)
                     downloaded += len(chunk)
@@ -257,7 +276,9 @@ class DownloadManager:
                         elapsed = (now - start_time).total_seconds()
                         if elapsed > 0:
                             speed_bps = downloaded / elapsed
-                            status.download_speed_mbps = (speed_bps / 1024 / 1024) * 8  # Mbps
+                            status.download_speed_mbps = (
+                                speed_bps / 1024 / 1024
+                            ) * 8  # Mbps
 
                             if total_size > 0 and speed_bps > 0:
                                 remaining = total_size - downloaded
@@ -269,9 +290,11 @@ class DownloadManager:
     def _find_existing_download(self, repo_id: str, filename: str) -> Optional[str]:
         """Find existing download for the same file"""
         for download_id, status in self.active_downloads.items():
-            if (status.repo_id == repo_id and 
-                status.filename == filename and 
-                status.status in [DownloadState.PENDING, DownloadState.DOWNLOADING]):
+            if (
+                status.repo_id == repo_id
+                and status.filename == filename
+                and status.status in [DownloadState.PENDING, DownloadState.DOWNLOADING]
+            ):
                 return download_id
         return None
 

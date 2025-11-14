@@ -1,17 +1,19 @@
-
-import asyncio
 import aiohttp
-import json
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from huggingface_hub import HfApi, ModelFilter
-from datetime import datetime
 import logging
 from model_manager.core.models import (
-    ModelInfoShort, ModelInfoDetailed, GGUFProvider, 
-    SearchFilters, TaskType, LicenseType, SortType
+    ModelInfoShort,
+    ModelInfoDetailed,
+    GGUFProvider,
+    SearchFilters,
+    TaskType,
+    SortType,
 )
 
 logger = logging.getLogger(__name__)
+
+
 class HuggingFaceService:
     """Service for interacting with Hugging Face Hub API"""
 
@@ -49,14 +51,14 @@ class HuggingFaceService:
         limit: int = 20,
         offset: int = 0,
         sort: SortType = SortType.LIKES,
-        filters: Optional[SearchFilters] = None
+        filters: Optional[SearchFilters] = None,
     ) -> List[ModelInfoShort]:
         """Search for models on Hugging Face Hub
 
         Args:
             query: Search query string
             limit: Maximum number of results
-            offset: Results offset for pagination  
+            offset: Results offset for pagination
             sort: Sort order
             filters: Optional search filters
 
@@ -67,7 +69,9 @@ class HuggingFaceService:
             aiohttp.ClientError: If HF API request fails
         """
         try:
-            logger.info(f"Searching models: query='{query}', limit={limit}, offset={offset}")
+            logger.info(
+                f"Searching models: query='{query}', limit={limit}, offset={offset}"
+            )
 
             # Convert our enums to HF API format
             hf_sort = self._convert_sort_to_hf(sort)
@@ -77,10 +81,7 @@ class HuggingFaceService:
             tags_filter = filters.tags if filters and filters.tags else None
 
             # Create ModelFilter with supported parameters only
-            model_filter = ModelFilter(
-                task=task_filter,
-                tags=tags_filter
-            )
+            model_filter = ModelFilter(task=task_filter, tags=tags_filter)
 
             # Search models using HfApi
             models = self.hf_api.list_models(
@@ -88,11 +89,11 @@ class HuggingFaceService:
                 filter=model_filter,
                 sort=hf_sort,
                 direction=-1,  # Descending
-                limit=limit + offset  # Get extra for offset handling
+                limit=limit + offset,  # Get extra for offset handling
             )
 
             # Convert to our models and apply offset
-            results = []
+            results: List[ModelInfoShort] = []
             for i, model in enumerate(models):
                 if i < offset:
                     continue
@@ -109,7 +110,9 @@ class HuggingFaceService:
             logger.error(f"Failed to search models: {e}")
             raise
 
-    async def get_model_details(self, author: str, model_name: str) -> ModelInfoDetailed:
+    async def get_model_details(
+        self, author: str, model_name: str
+    ) -> ModelInfoDetailed:
         """Get detailed information about a specific model
 
         Args:
@@ -145,7 +148,9 @@ class HuggingFaceService:
             logger.error(f"Failed to get model details for {repo_id}: {e}")
             raise
 
-    async def find_gguf_providers(self, author: str, model_name: str) -> List[GGUFProvider]:
+    async def find_gguf_providers(
+        self, author: str, model_name: str
+    ) -> List[GGUFProvider]:
         """Find and rank GGUF providers for a model
 
         Args:
@@ -163,18 +168,15 @@ class HuggingFaceService:
             # Search for GGUF versions
             search_queries = [
                 f"{model_name} GGUF",
-                f"{author} {model_name} GGUF", 
-                f"TheBloke {model_name} GGUF"
+                f"{author} {model_name} GGUF",
+                f"TheBloke {model_name} GGUF",
             ]
 
             providers = []
             seen_repos = set()
 
             for query in search_queries:
-                models = self.hf_api.list_models(
-                    search=query,
-                    limit=50
-                )
+                models = self.hf_api.list_models(search=query, limit=50)
 
                 for model in models:
                     if model.modelId in seen_repos:
@@ -182,7 +184,9 @@ class HuggingFaceService:
 
                     # Check if this repo contains GGUF files
                     if await self._has_gguf_files(model.modelId):
-                        provider = await self._convert_to_gguf_provider(model, base_repo_id)
+                        provider = await self._convert_to_gguf_provider(
+                            model, base_repo_id
+                        )
                         providers.append(provider)
                         seen_repos.add(model.modelId)
 
@@ -205,7 +209,7 @@ class HuggingFaceService:
         try:
             # Try to get README file
             files = self.hf_api.list_repo_files(repo_id)
-            readme_files = [f for f in files if f.lower().startswith('readme')]
+            readme_files = [f for f in files if f.lower().startswith("readme")]
 
             if not readme_files:
                 return None
@@ -213,12 +217,10 @@ class HuggingFaceService:
             # Get the first README file content
             readme_file = readme_files[0]
             content = self.hf_api.hf_hub_download(
-                repo_id=repo_id,
-                filename=readme_file,
-                repo_type="model"
+                repo_id=repo_id, filename=readme_file, repo_type="model"
             )
 
-            with open(content, 'r', encoding='utf-8') as f:
+            with open(content, "r", encoding="utf-8") as f:
                 return f.read()
 
         except Exception as e:
@@ -229,19 +231,19 @@ class HuggingFaceService:
         """Check if repository contains GGUF files"""
         try:
             files = self.hf_api.list_repo_files(repo_id)
-            return any(f.endswith('.gguf') for f in files)
-        except:
+            return any(f.endswith(".gguf") for f in files)
+        except Exception:
             return False
 
     async def _convert_to_model_info_short(self, hf_model) -> ModelInfoShort:
         """Convert HF model to ModelInfoShort"""
-        parts = hf_model.modelId.split('/', 1)
+        parts = hf_model.modelId.split("/", 1)
         author = parts[0] if len(parts) > 1 else "unknown"
         model_name = parts[1] if len(parts) > 1 else hf_model.modelId
 
         # Map HF task to our TaskType enum
         task = None
-        if hasattr(hf_model, 'pipeline_tag') and hf_model.pipeline_tag:
+        if hasattr(hf_model, "pipeline_tag") and hf_model.pipeline_tag:
             try:
                 task = TaskType(hf_model.pipeline_tag)
             except ValueError:
@@ -252,23 +254,24 @@ class HuggingFaceService:
             model_name=model_name,
             author=author,
             task=task,
-            downloads=getattr(hf_model, 'downloads', 0),
-            likes=getattr(hf_model, 'likes', 0),
-            last_modified=getattr(hf_model, 'lastModified', None),
-            tags=list(getattr(hf_model, 'tags', []))
+            license=None,
+            downloads=getattr(hf_model, "downloads", 0),
+            likes=getattr(hf_model, "likes", 0),
+            last_modified=getattr(hf_model, "lastModified", None),
+            tags=list(getattr(hf_model, "tags", [])),
         )
 
     async def _convert_to_model_info_detailed(
         self, hf_model, readme_content: Optional[str]
     ) -> ModelInfoDetailed:
         """Convert HF model to ModelInfoDetailed"""
-        parts = hf_model.modelId.split('/', 1)
+        parts = hf_model.modelId.split("/", 1)
         author = parts[0] if len(parts) > 1 else "unknown"
         model_name = parts[1] if len(parts) > 1 else hf_model.modelId
 
         # Map task type
         task = None
-        if hasattr(hf_model, 'pipeline_tag') and hf_model.pipeline_tag:
+        if hasattr(hf_model, "pipeline_tag") and hf_model.pipeline_tag:
             try:
                 task = TaskType(hf_model.pipeline_tag)
             except ValueError:
@@ -276,10 +279,9 @@ class HuggingFaceService:
 
         # Calculate total size
         total_size = 0
-        if hasattr(hf_model, 'siblings'):
+        if hasattr(hf_model, "siblings"):
             total_size = sum(
-                getattr(sibling, 'size', 0) or 0 
-                for sibling in hf_model.siblings
+                getattr(sibling, "size", 0) or 0 for sibling in hf_model.siblings
             )
 
         return ModelInfoDetailed(
@@ -287,27 +289,33 @@ class HuggingFaceService:
             model_name=model_name,
             author=author,
             task=task,
-            downloads=getattr(hf_model, 'downloads', 0),
-            likes=getattr(hf_model, 'likes', 0),
-            last_modified=getattr(hf_model, 'lastModified', None),
-            tags=list(getattr(hf_model, 'tags', [])),
+            license=None,
+            downloads=getattr(hf_model, "downloads", 0),
+            likes=getattr(hf_model, "likes", 0),
+            last_modified=getattr(hf_model, "lastModified", None),
+            tags=list(getattr(hf_model, "tags", [])),
+            description=None,
             readme_content=readme_content,
-            file_count=len(getattr(hf_model, 'siblings', [])),
-            total_size_bytes=total_size if total_size > 0 else None
+            model_card=None,
+            file_count=len(getattr(hf_model, "siblings", [])),
+            total_size_bytes=total_size if total_size > 0 else None,
         )
 
     async def _convert_to_gguf_provider(
         self, hf_model, original_repo_id: str
     ) -> GGUFProvider:
         """Convert HF model to GGUFProvider"""
-        parts = hf_model.modelId.split('/', 1)
+        parts = hf_model.modelId.split("/", 1)
         provider_name = parts[0] if len(parts) > 1 else "unknown"
 
         # Get GGUF file variants
         try:
             files = self.hf_api.list_repo_files(hf_model.modelId)
-            gguf_files = [f for f in files if f.endswith('.gguf')]
-        except:
+            gguf_files = [f for f in files if f.endswith(".gguf")]
+        except Exception as e:
+            logger.warning(
+                f"Could not list repo files for {hf_model.modelId}: {e}"
+            )
             gguf_files = []
 
         return GGUFProvider(
@@ -315,8 +323,8 @@ class HuggingFaceService:
             provider_name=provider_name,
             model_variants=gguf_files,
             is_recommended=False,  # Will be set later
-            total_downloads=getattr(hf_model, 'downloads', 0),
-            last_updated=getattr(hf_model, 'lastModified', None)
+            total_downloads=getattr(hf_model, "downloads", 0),
+            last_updated=getattr(hf_model, "lastModified", None),
         )
 
     def _calculate_provider_score(self, provider: GGUFProvider) -> float:
@@ -344,7 +352,7 @@ class HuggingFaceService:
         mapping = {
             SortType.LIKES: "likes",
             SortType.DOWNLOADS: "downloads",
-            SortType.TIME: "createdAt", 
-            SortType.UPDATE: "lastModified"
+            SortType.TIME: "createdAt",
+            SortType.UPDATE: "lastModified",
         }
         return mapping.get(sort, "likes")

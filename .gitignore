@@ -6,7 +6,7 @@ target/
 node_modules/
 *.lock
 
-# Êýøè
+# ï¿½ï¿½ï¿½ï¿½
 .vscode/
 
 # Python
@@ -44,9 +44,11 @@ Thumbs.db
 .env
 .env.local
 
-# User data (ÍÅ ÇÀÃÐÓÆÀÅÌ!)
+# User data (ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½!)
 *.db
 *.sqlite
 models/
 downloads/
 agents/
+
+GEMINI.md

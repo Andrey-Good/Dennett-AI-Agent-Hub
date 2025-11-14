@@ -1,5 +1,3 @@
-
-import os
 import shutil
 import hashlib
 import json
@@ -14,10 +12,11 @@ from model_manager.core.models import LocalModel, ImportAction
 
 logger = logging.getLogger(__name__)
 
+
 class LocalStorage:
     """Service for managing local model storage"""
 
-    def __init__(self, storage_dir: str = None, metadata_file: str = None):
+    def __init__(self, storage_dir: Optional[str] = None, metadata_file: Optional[str] = None):
         """Initialize local storage service
 
         Args:
@@ -64,12 +63,12 @@ class LocalStorage:
             return self._models_cache.get(model_id)
 
     async def import_model(
-        self, 
-        file_path: str, 
+        self,
+        file_path: str,
         action: ImportAction = ImportAction.COPY,
         display_name: Optional[str] = None,
         repo_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> LocalModel:
         """Import a GGUF file into local storage
 
@@ -94,7 +93,7 @@ class LocalStorage:
         if not source_path.exists():
             raise FileNotFoundError(f"Source file not found: {file_path}")
 
-        if not source_path.suffix.lower() == '.gguf':
+        if not source_path.suffix.lower() == ".gguf":
             raise ValueError(f"File must have .gguf extension: {file_path}")
 
         # Generate unique model ID
@@ -113,7 +112,9 @@ class LocalStorage:
                 # Check for duplicates based on hash
                 existing_model = self._find_model_by_hash(file_hash)
                 if existing_model:
-                    logger.warning(f"Model with same hash already exists: {existing_model.model_id}")
+                    logger.warning(
+                        f"Model with same hash already exists: {existing_model.model_id}"
+                    )
                     return existing_model
 
                 # Copy or move file
@@ -133,8 +134,9 @@ class LocalStorage:
                     file_size_bytes=file_size,
                     file_hash=file_hash,
                     imported_at=datetime.utcnow(),
+                    last_accessed=None,
                     metadata=metadata or {},
-                    is_downloaded=False  # This was imported, not downloaded
+                    is_downloaded=False,  # This was imported, not downloaded
                 )
 
                 # Add to cache and save
@@ -149,8 +151,8 @@ class LocalStorage:
                 if target_path.exists():
                     try:
                         target_path.unlink()
-                    except:
-                        pass
+                    except OSError as cleanup_e:
+                        logger.error(f"Failed to clean up target file {target_path}: {cleanup_e}")
                 raise e
 
     async def add_downloaded_model(
@@ -159,7 +161,7 @@ class LocalStorage:
         repo_id: str,
         filename: str,
         file_path: str,
-        file_hash: Optional[str] = None
+        file_hash: Optional[str] = None,
     ) -> LocalModel:
         """Add a downloaded model to local storage
 
@@ -184,7 +186,9 @@ class LocalStorage:
             # Check for duplicates
             existing_model = self._find_model_by_hash(file_hash)
             if existing_model:
-                logger.warning(f"Downloaded model is duplicate of {existing_model.model_id}")
+                logger.warning(
+                    f"Downloaded model is duplicate of {existing_model.model_id}"
+                )
                 return existing_model
 
             model = LocalModel(
@@ -195,8 +199,9 @@ class LocalStorage:
                 file_size_bytes=path.stat().st_size,
                 file_hash=file_hash,
                 imported_at=datetime.utcnow(),
+                last_accessed=None,
                 metadata={"download_id": download_id, "original_filename": filename},
-                is_downloaded=True
+                is_downloaded=True,
             )
 
             self._models_cache[model_id] = model
@@ -266,7 +271,9 @@ class LocalStorage:
         """
         async with self._lock:
             total_models = len(self._models_cache)
-            total_size = sum(model.file_size_bytes for model in self._models_cache.values())
+            total_size = sum(
+                model.file_size_bytes for model in self._models_cache.values()
+            )
 
             # Get disk usage
             disk_usage = shutil.disk_usage(self.storage_dir)
@@ -278,7 +285,7 @@ class LocalStorage:
                 "disk_free_bytes": disk_usage.free,
                 "disk_free_gb": round(disk_usage.free / (1024**3), 2),
                 "disk_total_gb": round(disk_usage.total / (1024**3), 2),
-                "storage_directory": str(self.storage_dir)
+                "storage_directory": str(self.storage_dir),
             }
 
     async def cleanup_orphaned_files(self) -> List[str]:
@@ -288,7 +295,9 @@ class LocalStorage:
             List of removed file paths
         """
         async with self._lock:
-            tracked_files = {Path(model.file_path) for model in self._models_cache.values()}
+            tracked_files = {
+                Path(model.file_path) for model in self._models_cache.values()
+            }
             removed_files = []
 
             # Find orphaned GGUF files
@@ -310,7 +319,7 @@ class LocalStorage:
             return
 
         try:
-            async with aiofiles.open(self.metadata_file, 'r') as f:
+            async with aiofiles.open(self.metadata_file, "r") as f:
                 content = await f.read()
                 data = json.loads(content)
 
@@ -321,7 +330,9 @@ class LocalStorage:
                     if Path(model.file_path).exists():
                         self._models_cache[model.model_id] = model
                     else:
-                        logger.warning(f"Model file not found, skipping: {model.file_path}")
+                        logger.warning(
+                            f"Model file not found, skipping: {model.file_path}"
+                        )
                 except Exception as e:
                     logger.error(f"Failed to load model metadata: {e}")
 
@@ -335,10 +346,10 @@ class LocalStorage:
         try:
             data = {
                 "models": [model.dict() for model in self._models_cache.values()],
-                "updated_at": datetime.utcnow().isoformat()
+                "updated_at": datetime.utcnow().isoformat(),
             }
 
-            async with aiofiles.open(self.metadata_file, 'w') as f:
+            async with aiofiles.open(self.metadata_file, "w") as f:
                 await f.write(json.dumps(data, indent=2, default=str))
 
         except Exception as e:
@@ -348,7 +359,7 @@ class LocalStorage:
         """Calculate SHA256 hash of a file"""
         hash_sha256 = hashlib.sha256()
 
-        async with aiofiles.open(file_path, 'rb') as f:
+        async with aiofiles.open(file_path, "rb") as f:
             while chunk := await f.read(8192):
                 hash_sha256.update(chunk)
 
@@ -366,16 +377,16 @@ class LocalStorage:
         # Remove or replace unsafe characters
         unsafe_chars = '<>:"/\|?*'
         for char in unsafe_chars:
-            filename = filename.replace(char, '_')
+            filename = filename.replace(char, "_")
         return filename
 
     def _extract_display_name(self, repo_id: str, filename: str) -> str:
         """Extract a reasonable display name from repo_id and filename"""
         # Use filename without extension, or repo name if filename is generic
         name_from_file = Path(filename).stem
-        name_from_repo = repo_id.split('/')[-1]
+        name_from_repo = repo_id.split("/")[-1]
 
-        if name_from_file and not name_from_file.lower() in ['model', 'pytorch_model']:
+        if name_from_file and name_from_file.lower() not in ["model", "pytorch_model"]:
             return name_from_file
         return name_from_repo
 
@@ -383,7 +394,7 @@ class LocalStorage:
         """Basic check if file is in use (Windows/Unix compatible)"""
         try:
             # Try to open file exclusively
-            with open(file_path, 'r+b'):
+            with open(file_path, "r+b"):
                 pass
             return False
         except (OSError, IOError):

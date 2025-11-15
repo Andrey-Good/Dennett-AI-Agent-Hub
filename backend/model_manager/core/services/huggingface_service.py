@@ -75,7 +75,6 @@ class HuggingFaceService:
 
             # Convert our enums to HF API format
 
-
             # Build HF ModelFilter parameters
             task_filter = filters.task.value if filters and filters.task else None
             tags_filter = filters.tags if filters and filters.tags else None

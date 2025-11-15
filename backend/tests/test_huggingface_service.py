@@ -1,8 +1,5 @@
 import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch, Mock
-from datetime import datetime
-from typing import List, Optional
+from unittest.mock import AsyncMock, patch, Mock
 
 # Import the classes to test
 from model_manager.core.services.huggingface_service import HuggingFaceService
@@ -377,7 +374,7 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
     def test_service_without_token(self):
         """Test service creation without token (public access)"""
         with patch('model_manager.core.services.huggingface_service.HfApi') as mock_hf_api:
-            service = HuggingFaceService()
+            HuggingFaceService()
 
             # Verify HfApi was called without token
             mock_hf_api.assert_called_once_with(token=None)
@@ -386,7 +383,7 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
         """Test service creation with token (private access)"""
         with patch('model_manager.core.services.huggingface_service.HfApi') as mock_hf_api:
             test_token = "hf_test_token_123"
-            service = HuggingFaceService(token=test_token)
+            HuggingFaceService(token=test_token)
 
             # Verify HfApi was called with token
             mock_hf_api.assert_called_once_with(token=test_token)

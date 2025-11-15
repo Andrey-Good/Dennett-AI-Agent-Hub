@@ -18,8 +18,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Service imports
-from ai_core.core.config.settings import config
-from ai_core.core.models import (
+from apps.ai_core.ai_core.core.config.settings import config
+from apps.ai_core.ai_core.core.models import (
     ModelInfoShort,
     ModelInfoDetailed,
     GGUFProvider,
@@ -32,9 +32,9 @@ from ai_core.core.models import (
     SortType,
 )
 
-from ai_core.core.services.huggingface_service import HuggingFaceService
-from ai_core.core.services.download_manager import DownloadManager
-from ai_core.core.services.local_storage import LocalStorage
+from apps.ai_core.ai_core.core.services.huggingface_service import HuggingFaceService
+from apps.ai_core.ai_core.core.services.download_manager import DownloadManager
+from apps.ai_core.ai_core.core.services.local_storage import LocalStorage
 
 # Configure logging
 logging.basicConfig(

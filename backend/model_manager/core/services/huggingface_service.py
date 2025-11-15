@@ -74,7 +74,7 @@ class HuggingFaceService:
             )
 
             # Convert our enums to HF API format
-            hf_sort = self._convert_sort_to_hf(sort)
+
 
             # Build HF ModelFilter parameters
             task_filter = filters.task.value if filters and filters.task else None

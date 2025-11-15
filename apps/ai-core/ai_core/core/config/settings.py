@@ -1,4 +1,4 @@
-# model_manager/core/config/settings.py
+# ai_core/core/config/settings.py
 from pathlib import Path
 from typing import Optional, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,7 +19,7 @@ class ModelManagerConfig(BaseSettings):
 
     # API Settings
     api_token: str = Field(
-        default="your-secure-api-token", alias="MODEL_MANAGER_API_TOKEN"
+        default="your-secure-api-token", alias="AI_CORE_API_TOKEN"
     )
     api_host: str = Field(
         default="127.0.0.1",  # Changed from 0.0.0.0 for security. Bind to 0.0.0.0 only if explicitly needed and secured.

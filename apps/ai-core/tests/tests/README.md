@@ -1,6 +1,6 @@
 # Hugging Face Service Tests
 
-This directory contains comprehensive tests for the Hugging Face service (`model_manager/core/services/huggingface_service.py`).
+This directory contains comprehensive tests for the Hugging Face service (`ai_core/core/services/huggingface_service.py`).
 
 ## Test Overview
 
@@ -37,7 +37,7 @@ The test suite covers the main functionality of the HuggingFaceService class:
 python -m pytest tests/test_huggingface_service.py -v
 
 # Run with coverage
-python -m pytest tests/test_huggingface_service.py --cov=model_manager.core.services.huggingface_service
+python -m pytest tests/test_huggingface_service.py --cov=ai_core.core.services.huggingface_service
 
 # Run specific test
 python -m pytest tests/test_huggingface_service.py::TestHuggingFaceService::test_search_models_basic -v

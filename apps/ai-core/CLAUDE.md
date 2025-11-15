@@ -10,17 +10,17 @@ This is a Model Manager service for the Dennet AI platform. It provides a compre
 
 ### Core Components
 
-1. **FastAPI Application** (`model_manager/app/main.py`)
+1. **FastAPI Application** (`ai_core/app/main.py`)
    - RESTful API with OAuth2 Bearer token authentication
    - CORS middleware enabled for cross-origin requests
    - Structured error handling with custom error responses
 
-2. **Service Layer** (`model_manager/core/services/`)
+2. **Service Layer** (`ai_core/core/services/`)
    - `huggingface_service.py`: Hugging Face Hub integration for model discovery and metadata retrieval
    - `download_manager.py`: Async download management with progress tracking and Server-Sent Events
    - `local_storage.py`: Local file system management for imported models and metadata
 
-3. **Models** (`model_manager/core/models.py`)
+3. **Models** (`ai_core/core/models.py`)
    - Pydantic models for API contracts and data validation
    - Comprehensive type definitions for model metadata, downloads, and local storage
 
@@ -62,7 +62,7 @@ cp env.template .env
 ./start.sh
 
 # Or run directly with uvicorn
-python -m uvicorn model_manager.app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn ai_core.app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ### Testing
@@ -74,7 +74,7 @@ python -m pytest
 python -m pytest -v
 
 # Run test with coverage
-python -m pytest --cov=model_manager
+python -m pytest --cov=ai_core
 ```
 
 ### Linting and Code Quality
@@ -151,10 +151,10 @@ The API uses structured error responses with error codes:
 - JSON-based logging for structured logging output
 
 ### File Organization
-- API routes in `model_manager/app/main.py`
-- Service classes in `model_manager/core/services/`
-- Data models in `model_manager/core/models.py`
-- Configuration in `model_manager/core/config/`
+- API routes in `ai_core/app/main.py`
+- Service classes in `ai_core/core/services/`
+- Data models in `ai_core/core/models.py`
+- Configuration in `ai_core/core/config/`
 
 ### Best Practices
 - Always handle async operations with proper error handling

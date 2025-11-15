@@ -1,6 +1,6 @@
 import aiohttp
 from typing import List, Optional
-from huggingface_hub import HfApi, ModelFilter
+from huggingface_hub import HfApi  # type: ignore
 import logging
 from model_manager.core.models import (
     ModelInfoShort,
@@ -80,16 +80,23 @@ class HuggingFaceService:
             task_filter = filters.task.value if filters and filters.task else None
             tags_filter = filters.tags if filters and filters.tags else None
 
-            # Create ModelFilter with supported parameters only
-            model_filter = ModelFilter(task=task_filter, tags=tags_filter)
+            # Create filter dictionary with supported parameters only
+            filter_dict = {}
+            if task_filter:
+                filter_dict["task"] = task_filter
+            if tags_filter:
+                filter_dict["tags"] = tags_filter  # type: ignore[assignment]
+
+            direction = "desc"  # Default direction for sorting
 
             # Search models using HfApi
             models = self.hf_api.list_models(
                 search=query,
-                filter=model_filter,
-                sort=hf_sort,
-                direction=-1,  # Descending
-                limit=limit + offset,  # Get extra for offset handling
+                filter=filter_dict if filter_dict else None,
+                sort=sort.value,
+                direction=direction,
+                limit=limit,
+                skip=offset,
             )
 
             # Convert to our models and apply offset

@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 class LocalStorage:
     """Service for managing local model storage"""
 
-    def __init__(self, storage_dir: Optional[str] = None, metadata_file: Optional[str] = None):
+    def __init__(
+        self, storage_dir: Optional[str] = None, metadata_file: Optional[str] = None
+    ):
         """Initialize local storage service
 
         Args:
@@ -152,7 +154,9 @@ class LocalStorage:
                     try:
                         target_path.unlink()
                     except OSError as cleanup_e:
-                        logger.error(f"Failed to clean up target file {target_path}: {cleanup_e}")
+                        logger.error(
+                            f"Failed to clean up target file {target_path}: {cleanup_e}"
+                        )
                 raise e
 
     async def add_downloaded_model(

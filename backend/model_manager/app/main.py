@@ -97,7 +97,9 @@ def handle_service_error(e: Exception, operation: str):
         raise HTTPException(
             status_code=404,
             detail=ErrorResponse(
-                error_code="NOT_FOUND", message=f"Resource not found: {str(e)}", details=None
+                error_code="NOT_FOUND",
+                message=f"Resource not found: {str(e)}",
+                details=None,
             ).dict(),
         )
     elif "unavailable" in str(e).lower() or "timeout" in str(e).lower():
@@ -113,7 +115,9 @@ def handle_service_error(e: Exception, operation: str):
         raise HTTPException(
             status_code=500,
             detail=ErrorResponse(
-                error_code="INTERNAL_ERROR", message=f"Internal service error: {str(e)}", details=None
+                error_code="INTERNAL_ERROR",
+                message=f"Internal service error: {str(e)}",
+                details=None,
             ).dict(),
         )
 
@@ -349,7 +353,9 @@ async def import_model(
     except ValueError as e:
         raise HTTPException(
             status_code=400,
-            detail=ErrorResponse(error_code="INVALID_FILE", message=str(e), details=None).dict(),
+            detail=ErrorResponse(
+                error_code="INVALID_FILE", message=str(e), details=None
+            ).dict(),
         )
     except Exception as e:
         handle_service_error(e, "import_model")

@@ -23,7 +23,7 @@ class ModelManagerConfig(BaseSettings):
     )
     api_host: str = Field(
         default="127.0.0.1",  # Changed from 0.0.0.0 for security. Bind to 0.0.0.0 only if explicitly needed and secured.
-        alias="API_HOST"
+        alias="API_HOST",
     )
     api_port: int = Field(default=8000, alias="API_PORT")
 

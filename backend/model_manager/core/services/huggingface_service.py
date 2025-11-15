@@ -313,9 +313,7 @@ class HuggingFaceService:
             files = self.hf_api.list_repo_files(hf_model.modelId)
             gguf_files = [f for f in files if f.endswith(".gguf")]
         except Exception as e:
-            logger.warning(
-                f"Could not list repo files for {hf_model.modelId}: {e}"
-            )
+            logger.warning(f"Could not list repo files for {hf_model.modelId}: {e}")
             gguf_files = []
 
         return GGUFProvider(

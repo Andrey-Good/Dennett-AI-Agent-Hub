@@ -4,13 +4,19 @@ from unittest.mock import AsyncMock, patch, Mock
 # Import the classes to test
 from model_manager.core.services.huggingface_service import HuggingFaceService
 from model_manager.core.models import (
-    ModelInfoShort, ModelInfoDetailed, GGUFProvider,
-    TaskType, LicenseType, SortType, SearchFilters
+    ModelInfoShort,
+    ModelInfoDetailed,
+    GGUFProvider,
+    TaskType,
+    LicenseType,
+    SortType,
+    SearchFilters,
 )
 
 
 class MockHuggingFaceModel:
     """Mock object that mimics HuggingFace model objects"""
+
     def __init__(self, model_id, author, pipeline_tag=None, downloads=None, likes=None):
         self.modelId = model_id
         self.id = model_id
@@ -27,7 +33,7 @@ class MockHuggingFaceModel:
         self.siblings = [
             {"rfilename": "config.json"},
             {"rfilename": "pytorch_model.bin"},
-            {"rfilename": "README.md"}
+            {"rfilename": "README.md"},
         ]
 
     @property
@@ -54,9 +60,16 @@ class TestHuggingFaceService:
     @pytest.fixture
     def service(self, mock_hf_api, mock_aiohttp_session):
         """Fixture to create HuggingFaceService instance"""
-        with patch('model_manager.core.services.huggingface_service.HfApi', return_value=mock_hf_api), \
-             patch('model_manager.core.services.huggingface_service.aiohttp.ClientSession', return_value=mock_aiohttp_session):
-
+        with (
+            patch(
+                "model_manager.core.services.huggingface_service.HfApi",
+                return_value=mock_hf_api,
+            ),
+            patch(
+                "model_manager.core.services.huggingface_service.aiohttp.ClientSession",
+                return_value=mock_aiohttp_session,
+            ),
+        ):
             service = HuggingFaceService()
             service.session = mock_aiohttp_session
             yield service
@@ -70,7 +83,7 @@ class TestHuggingFaceService:
             author="microsoft",
             pipeline_tag="text-generation",
             downloads=125000,
-            likes=3500
+            likes=3500,
         )
 
     @pytest.fixture
@@ -99,7 +112,9 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
         mock_hf_api.list_models.return_value = [sample_model_data]
 
         # Call the method
-        results = await service.search_models(query="dialogue", limit=20, offset=0, sort=SortType.LIKES)
+        results = await service.search_models(
+            query="dialogue", limit=20, offset=0, sort=SortType.LIKES
+        )
 
         # Verify the call
         mock_hf_api.list_models.assert_called_once()
@@ -115,50 +130,49 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
         assert results[0].likes == 3500
 
     @pytest.mark.asyncio
-    async def test_search_models_with_filters(self, service, mock_hf_api, sample_model_data):
+    async def test_search_models_with_filters(
+        self, service, mock_hf_api, sample_model_data
+    ):
         """Test model search with filters"""
         # Mock the list_models response
         mock_hf_api.list_models.return_value = [sample_model_data]
 
         # Create filters
-        filters = SearchFilters(
-            task=TaskType.TEXT_GENERATION,
-            license=LicenseType.MIT
-        )
+        filters = SearchFilters(task=TaskType.TEXT_GENERATION, license=LicenseType.MIT)
 
         # Call the method
         results = await service.search_models(
-            query="chat",
-            limit=10,
-            offset=0,
-            sort=SortType.DOWNLOADS,
-            filters=filters
+            query="chat", limit=10, offset=0, sort=SortType.DOWNLOADS, filters=filters
         )
 
         # Verify the call was made with correct parameters
         mock_hf_api.list_models.assert_called_once()
         call_args = mock_hf_api.list_models.call_args
-        assert call_args[1]['filter'] is not None
-        assert call_args[1]['limit'] == 10
+        assert call_args[1]["filter"] is not None
+        assert call_args[1]["limit"] == 10
 
         # Verify results
         assert len(results) == 1
         assert results[0].task == TaskType.TEXT_GENERATION
 
     @pytest.mark.asyncio
-    async def test_search_models_sorting_options(self, service, mock_hf_api, sample_model_data):
+    async def test_search_models_sorting_options(
+        self, service, mock_hf_api, sample_model_data
+    ):
         """Test different sorting options"""
         mock_hf_api.list_models.return_value = [sample_model_data]
 
         # Test different sort types
-        sort_types = [SortType.LIKES, SortType.DOWNLOADS, SortType.TIME, SortType.UPDATE]
+        sort_types = [
+            SortType.LIKES,
+            SortType.DOWNLOADS,
+            SortType.TIME,
+            SortType.UPDATE,
+        ]
 
         for sort_type in sort_types:
             results = await service.search_models(
-                query="test",
-                limit=20,
-                offset=0,
-                sort=sort_type
+                query="test", limit=20, offset=0, sort=sort_type
             )
 
             # Verify each sort type works
@@ -166,23 +180,29 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
             assert isinstance(results[0], ModelInfoShort)
 
     @pytest.mark.asyncio
-    async def test_search_models_pagination(self, service, mock_hf_api, sample_model_data):
+    async def test_search_models_pagination(
+        self, service, mock_hf_api, sample_model_data
+    ):
         """Test pagination functionality"""
         mock_hf_api.list_models.return_value = [sample_model_data]
 
         # Test with limit
-        results = await service.search_models(query="test", limit=5, offset=0, sort=SortType.LIKES)
+        results = await service.search_models(
+            query="test", limit=5, offset=0, sort=SortType.LIKES
+        )
         assert len(results) == 1
         call_args = mock_hf_api.list_models.call_args
         if call_args:
-            assert call_args[1]['limit'] == 5
+            assert call_args[1]["limit"] == 5
 
     # ============================================================================
     # MODEL DETAILS TESTS
     # ============================================================================
 
     @pytest.mark.asyncio
-    async def test_get_model_details_success(self, service, mock_hf_api, sample_model_data, sample_readme_content):
+    async def test_get_model_details_success(
+        self, service, mock_hf_api, sample_model_data, sample_readme_content
+    ):
         """Test successful model details retrieval"""
         # Mock model_info response
         mock_hf_api.model_info.return_value = sample_model_data
@@ -195,17 +215,21 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
             "config.json",
             "pytorch_model.bin",
             "README.md",
-            "DialoGPT-medium.gguf"
+            "DialoGPT-medium.gguf",
         ]
 
         # Mock the _siblings attribute which is used in conversion method
         def mock_getattr(name, default=None):
-            if name == '_siblings':
+            if name == "_siblings":
                 return [
                     {"rfilename": "config.json", "size": 500},
                     {"rfilename": "pytorch_model.bin", "size": 1542188416},
                     {"rfilename": "README.md", "size": 12000},
-                    {"rfilename": "DialoGPT-medium.gguf", "size": 1542188416, "lfs_file": True}
+                    {
+                        "rfilename": "DialoGPT-medium.gguf",
+                        "size": 1542188416,
+                        "lfs_file": True,
+                    },
                 ]
             return default
 
@@ -228,16 +252,15 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
         assert result.likes == 3500
 
     @pytest.mark.asyncio
-    async def test_get_model_details_without_readme(self, service, mock_hf_api, sample_model_data):
+    async def test_get_model_details_without_readme(
+        self, service, mock_hf_api, sample_model_data
+    ):
         """Test model details retrieval when README is not available"""
         # Mock model_info response
         mock_hf_api.model_info.return_value = sample_model_data
 
         # Mock list_repo_files (no README)
-        mock_hf_api.list_repo_files.return_value = [
-            "config.json",
-            "pytorch_model.bin"
-        ]
+        mock_hf_api.list_repo_files.return_value = ["config.json", "pytorch_model.bin"]
 
         # Mock README download (will raise exception)
         mock_hf_api.hf_hub_download.side_effect = Exception("File not found")
@@ -266,7 +289,9 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
     # ============================================================================
 
     @pytest.mark.asyncio
-    async def test_find_gguf_providers_found(self, service, mock_hf_api, sample_model_data):
+    async def test_find_gguf_providers_found(
+        self, service, mock_hf_api, sample_model_data
+    ):
         """Test finding GGUF providers when they exist"""
         # Mock model_info response
         mock_hf_api.model_info.return_value = sample_model_data
@@ -280,7 +305,7 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
             "pytorch_model.bin",
             "README.md",
             "DialoGPT-medium.Q4_K_M.gguf",
-            "DialoGPT-medium.Q5_K_S.gguf"
+            "DialoGPT-medium.Q5_K_S.gguf",
         ]
 
         # Call the method
@@ -303,7 +328,9 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
         assert "DialoGPT-medium.Q5_K_S.gguf" in provider.model_variants
 
     @pytest.mark.asyncio
-    async def test_find_gguf_providers_none(self, service, mock_hf_api, sample_model_data):
+    async def test_find_gguf_providers_none(
+        self, service, mock_hf_api, sample_model_data
+    ):
         """Test finding GGUF providers when none exist"""
         # Mock model_info response
         mock_hf_api.model_info.return_value = sample_model_data
@@ -315,7 +342,7 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
         mock_hf_api.list_repo_files.return_value = [
             "config.json",
             "pytorch_model.bin",
-            "README.md"
+            "README.md",
         ]
 
         # Call the method
@@ -329,7 +356,9 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
         assert len(results) == 0
 
     @pytest.mark.asyncio
-    async def test_find_gguf_providers_ranking(self, service, mock_hf_api, sample_model_data):
+    async def test_find_gguf_providers_ranking(
+        self, service, mock_hf_api, sample_model_data
+    ):
         """Test GGUF provider ranking algorithm"""
         # Mock model_info response
         mock_hf_api.model_info.return_value = sample_model_data
@@ -344,7 +373,7 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
             "README.md",
             "DialoGPT-medium.gguf",  # Main repo
             "DialoGPT-medium.Q4_K_M.gguf",  # TheBloke
-            "DialoGPT-medium.Q5_K_S.gguf"   # bartowski
+            "DialoGPT-medium.Q5_K_S.gguf",  # bartowski
         ]
 
         # Call the method
@@ -373,7 +402,9 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
 
     def test_service_without_token(self):
         """Test service creation without token (public access)"""
-        with patch('model_manager.core.services.huggingface_service.HfApi') as mock_hf_api:
+        with patch(
+            "model_manager.core.services.huggingface_service.HfApi"
+        ) as mock_hf_api:
             HuggingFaceService()
 
             # Verify HfApi was called without token
@@ -381,7 +412,9 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
 
     def test_service_with_token(self):
         """Test service creation with token (private access)"""
-        with patch('model_manager.core.services.huggingface_service.HfApi') as mock_hf_api:
+        with patch(
+            "model_manager.core.services.huggingface_service.HfApi"
+        ) as mock_hf_api:
             test_token = "hf_test_token_123"
             HuggingFaceService(token=test_token)
 
@@ -394,7 +427,7 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
 
     def test_service_initialization(self):
         """Test service initialization and trusted providers"""
-        with patch('model_manager.core.services.huggingface_service.HfApi'):
+        with patch("model_manager.core.services.huggingface_service.HfApi"):
             service = HuggingFaceService()
 
             # Verify trusted providers are set
@@ -408,9 +441,13 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
         """Test service as async context manager"""
         mock_session = AsyncMock()
 
-        with patch('model_manager.core.services.huggingface_service.HfApi'), \
-             patch('model_manager.core.services.huggingface_service.aiohttp.ClientSession', return_value=mock_session):
-
+        with (
+            patch("model_manager.core.services.huggingface_service.HfApi"),
+            patch(
+                "model_manager.core.services.huggingface_service.aiohttp.ClientSession",
+                return_value=mock_session,
+            ),
+        ):
             async with HuggingFaceService() as service:
                 assert service.session is not None
                 assert service.session == mock_session

@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 class DownloadManager:
     """Service for managing asynchronous model downloads"""
 
-    def __init__(self, download_dir: Optional[str] = None, max_concurrent: Optional[int] = None):
+    def __init__(
+        self, download_dir: Optional[str] = None, max_concurrent: Optional[int] = None
+    ):
         """Initialize download manager
 
         Args:
@@ -42,7 +44,9 @@ class DownloadManager:
         # SSE subscribers
         self.subscribers: Dict[str, asyncio.Queue] = {}
 
-    async def start_download(self, repo_id: str, filename: str, background_tasks: BackgroundTasks) -> str:
+    async def start_download(
+        self, repo_id: str, filename: str, background_tasks: BackgroundTasks
+    ) -> str:
         """Start downloading a model file
 
         Args:

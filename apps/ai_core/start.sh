@@ -1,9 +1,8 @@
-#!/bin/bash
-# start.sh - Startup script for Model Manager
+# start.sh - Startup script for AI Core
 
 set -e
 
-echo "🚀 Starting Model Manager service..."
+echo "🚀 Starting AI Core service..."
 
 # Create directories if they don't exist
 mkdir -p models downloads logs
@@ -30,7 +29,7 @@ fi
 
 # Run database migrations or setup if needed
 echo "🔧 Running setup tasks..."
-python -c "from ai_core.core.config.settings import validate_directories; validate_directories()"
+python -c "from ai_core.config.settings import validate_directories; validate_directories()"
 
 # Start the server
 echo "✅ Starting FastAPI server..."

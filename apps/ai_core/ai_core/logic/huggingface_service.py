@@ -2,7 +2,7 @@ import aiohttp
 from typing import List, Optional
 from huggingface_hub import HfApi  # type: ignore
 import logging
-from ai_core.core.models import (
+from ai_core.models import (
     ModelInfoShort,
     ModelInfoDetailed,
     GGUFProvider,
@@ -23,7 +23,7 @@ class HuggingFaceService:
         Args:
             token: Optional HF API token for authenticated requests
         """
-        from ai_core.core.config.settings import config
+        from ai_core.config.settings import config
 
         # Use config token if not provided
         if token is None:

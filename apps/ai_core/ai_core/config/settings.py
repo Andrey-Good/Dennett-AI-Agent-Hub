@@ -1,4 +1,4 @@
-# ai_core/core/config/settings.py
+# ai_core/config/settings.py
 from pathlib import Path
 from typing import Optional, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -14,7 +14,7 @@ APP_DATA_DIR = Path(user_data_dir(APP_NAME, APP_AUTHOR))
 LOGS_DIR = Path(user_log_dir(APP_NAME, APP_AUTHOR))
 
 
-class ModelManagerConfig(BaseSettings):
+class AiCoreConfig(BaseSettings):
     """Model Manager configuration settings"""
 
     # API Settings
@@ -81,7 +81,7 @@ class ModelManagerConfig(BaseSettings):
 
 
 # Global config instance
-config = ModelManagerConfig()
+config = AiCoreConfig()
 settings = config  # Алиас для совместимости с main.py
 
 
@@ -102,7 +102,7 @@ def validate_directories():
         print(f"✅ Directory ready: {dir_path}")
 
 
-def get_config() -> ModelManagerConfig:
+def get_config() -> AiCoreConfig:
     """Get configuration instance"""
     return config
 
@@ -118,7 +118,7 @@ def get_agent_path(agent_name: str) -> Path:
 
 
 if __name__ == "__main__":
-    print("Model Manager Configuration:")
+    print("AI Core Configuration:")
     print(f"Models directory: {config.models_dir}")
     print(f"Downloads directory: {config.downloads_dir}")
     print(f"Agents directory: {config.agents_dir}")

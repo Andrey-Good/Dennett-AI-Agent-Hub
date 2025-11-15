@@ -11,6 +11,7 @@ httpx            # Для тестов API (вместо requests)
 
 # Типизация
 mypy
+types-aiofiles
 
 # Безопасность
 bandit

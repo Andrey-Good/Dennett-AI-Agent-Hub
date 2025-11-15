@@ -16,4 +16,4 @@ mypy
 bandit
 
 # Хуки
-pre-commitЫщ
+pre-commit

@@ -42,7 +42,7 @@ jobs:
       run: mypy .
       
     - name: 7. Run Bandit (Security)
-      run: bandit -r .
+      run: bandit -r . -x ./backend/tests/
 
     # Раскомментируй, когда у тебя появятся тесты
     # - name: 8. Run Pytest

@@ -3,7 +3,7 @@ import json
 import logging
 
 from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks
-from ai_core.models import (
+from apps.ai_core.ai_core.models import (
     ModelInfoShort,
     ModelInfoDetailed,
     GGUFProvider,
@@ -11,8 +11,8 @@ from ai_core.models import (
     ErrorResponse,
     SortType,
 )
-from ai_core.logic.huggingface_service import HuggingFaceService
-from ai_core.dependencies import get_hf_service, handle_service_error
+from apps.ai_core.ai_core.logic.huggingface_service import HuggingFaceService
+from apps.ai_core.ai_core.dependencies import get_hf_service, handle_service_error
 
 logger = logging.getLogger(__name__)
 

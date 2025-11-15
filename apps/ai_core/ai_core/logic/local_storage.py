@@ -8,7 +8,7 @@ from datetime import datetime
 import logging
 import asyncio
 import aiofiles
-from ai_core.models import LocalModel, ImportAction
+from apps.ai_core.ai_core.models import LocalModel, ImportAction
 
 logger = logging.getLogger(__name__)
 

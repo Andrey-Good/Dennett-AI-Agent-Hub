@@ -7,7 +7,7 @@ from typing import Dict, Optional, AsyncGenerator
 from fastapi import BackgroundTasks
 from datetime import datetime
 import logging
-from ai_core.models import DownloadStatus, DownloadState
+from apps.ai_core.ai_core.models import DownloadStatus, DownloadState
 
 logger = logging.getLogger(__name__)
 

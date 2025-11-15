@@ -4,9 +4,9 @@ from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from ai_core.config.settings import config
-from ai_core.api.hub import hub_router
-from ai_core.api.local import local_router
+from apps.ai_core.ai_core.config.settings import config
+from apps.ai_core.ai_core.api.hub import hub_router
+from apps.ai_core.ai_core.api.local import local_router
 
 # Configure logging
 logging.basicConfig(

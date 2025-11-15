@@ -2,7 +2,7 @@ import aiohttp
 from typing import List, Optional
 from huggingface_hub import HfApi  # type: ignore
 import logging
-from ai_core.models import (
+from apps.ai_core.ai_core.models import (
     ModelInfoShort,
     ModelInfoDetailed,
     GGUFProvider,

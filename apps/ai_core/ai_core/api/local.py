@@ -7,16 +7,16 @@ import json
 
 from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from ai_core.models import (
+from apps.ai_core.ai_core.models import (
     DownloadRequest,
     DownloadResponse,
     ImportRequest,
     LocalModel,
     ErrorResponse,
 )
-from ai_core.logic.download_manager import DownloadManager
-from ai_core.logic.local_storage import LocalStorage
-from ai_core.dependencies import get_download_manager, get_local_storage, handle_service_error
+from apps.ai_core.ai_core.logic.download_manager import DownloadManager
+from apps.ai_core.ai_core.logic.local_storage import LocalStorage
+from apps.ai_core.ai_core.dependencies import get_download_manager, get_local_storage, handle_service_error
 
 logger = logging.getLogger(__name__)
 

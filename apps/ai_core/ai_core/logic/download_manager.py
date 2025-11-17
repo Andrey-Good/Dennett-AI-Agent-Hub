@@ -7,7 +7,7 @@ from typing import Dict, Optional, AsyncGenerator
 from fastapi import BackgroundTasks
 from datetime import datetime
 import logging
-from model_manager.core.models import DownloadStatus, DownloadState
+from apps.ai_core.ai_core.db.models import DownloadStatus, DownloadState
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class DownloadManager:
             download_dir: Directory to store downloaded files
             max_concurrent: Maximum concurrent downloads
         """
-        from model_manager.core.config.settings import config
+        from ai_core.config.settings import config
 
         # Use config values if not provided
         if download_dir is None:

@@ -30,8 +30,8 @@ fi
 
 # Run database migrations or setup if needed
 echo "🔧 Running setup tasks..."
-python -c "from model_manager.core.config.settings import validate_directories; validate_directories()"
+python -c "from ai_core.config.settings import validate_directories; validate_directories()"
 
 # Start the server
 echo "✅ Starting FastAPI server..."
-python -m uvicorn model_manager.app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn ai_core.main:app --host 0.0.0.0 --port 8000 --reload

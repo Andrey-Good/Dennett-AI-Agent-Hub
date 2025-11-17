@@ -10,16 +10,9 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-# Internal imports
-import sys
-from pathlib import Path
-
-# Add project root to sys.path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 # Service imports
-from model_manager.core.config.settings import config
-from model_manager.core.models import (
+from apps.ai_core.ai_core.config.settings import config
+from apps.ai_core.ai_core.db.models import (
     ModelInfoShort,
     ModelInfoDetailed,
     GGUFProvider,
@@ -32,9 +25,9 @@ from model_manager.core.models import (
     SortType,
 )
 
-from model_manager.core.services.huggingface_service import HuggingFaceService
-from model_manager.core.services.download_manager import DownloadManager
-from model_manager.core.services.local_storage import LocalStorage
+from apps.ai_core.ai_core.logic.huggingface_service import HuggingFaceService
+from apps.ai_core.ai_core.logic.download_manager import DownloadManager
+from apps.ai_core.ai_core.logic.local_storage import LocalStorage
 
 # Configure logging
 logging.basicConfig(

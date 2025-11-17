@@ -8,7 +8,7 @@ from datetime import datetime
 import logging
 import asyncio
 import aiofiles
-from model_manager.core.models import LocalModel, ImportAction
+from apps.ai_core.ai_core.db.models import LocalModel, ImportAction
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class LocalStorage:
             storage_dir: Directory to store model files
             metadata_file: File to store model metadata
         """
-        from model_manager.core.config.settings import config
+        from ai_core.config.settings import config
 
         # Use config values if not provided
         if storage_dir is None:

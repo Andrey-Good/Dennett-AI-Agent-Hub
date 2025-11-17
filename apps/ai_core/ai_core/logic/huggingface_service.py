@@ -2,7 +2,7 @@ import aiohttp
 from typing import List, Optional
 from huggingface_hub import HfApi  # type: ignore
 import logging
-from model_manager.core.models import (
+from apps.ai_core.ai_core.db.models import (
     ModelInfoShort,
     ModelInfoDetailed,
     GGUFProvider,
@@ -23,7 +23,7 @@ class HuggingFaceService:
         Args:
             token: Optional HF API token for authenticated requests
         """
-        from model_manager.core.config.settings import config
+        from apps.ai_core.ai_core.config.settings import config
 
         # Use config token if not provided
         if token is None:
@@ -87,15 +87,15 @@ class HuggingFaceService:
                 filter_dict["tags"] = tags_filter  # type: ignore[assignment]
 
             direction = "desc"  # Default direction for sorting
+            direction_value = -1 if direction == "desc" else 1
 
             # Search models using HfApi
             models = self.hf_api.list_models(
                 search=query,
                 filter=filter_dict if filter_dict else None,
                 sort=sort.value,
-                direction=direction,
+                direction=direction_value,
                 limit=limit,
-                skip=offset,
             )
 
             # Convert to our models and apply offset

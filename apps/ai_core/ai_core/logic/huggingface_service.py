@@ -1,4 +1,5 @@
 import aiohttp
+import asyncio
 from typing import List, Optional
 from huggingface_hub import HfApi  # type: ignore
 import logging
@@ -46,66 +47,47 @@ class HuggingFaceService:
             await self.session.close()
 
     async def search_models(
-        self,
-        query: str,
-        limit: int = 20,
-        offset: int = 0,
-        sort: SortType = SortType.LIKES,
-        filters: Optional[SearchFilters] = None,
+            self,
+            query: str,
+            limit: int = 20,
+            offset: int = 0,
+            sort: SortType = SortType.LIKES,
+            filters: Optional[SearchFilters] = None,
     ) -> List[ModelInfoShort]:
-        """Search for models on Hugging Face Hub
-
-        Args:
-            query: Search query string
-            limit: Maximum number of results
-            offset: Results offset for pagination
-            sort: Sort order
-            filters: Optional search filters
-
-        Returns:
-            List of ModelInfoShort objects
-
-        Raises:
-            aiohttp.ClientError: If HF API request fails
-        """
+        """Search for models on Hugging Face Hub"""
         try:
-            logger.info(
-                f"Searching models: query='{query}', limit={limit}, offset={offset}"
-            )
+            logger.info(f"Searching models: query='{query}', limit={limit}, offset={offset}")
 
-            # Convert our enums to HF API format
-
-            # Build HF ModelFilter parameters
+            # Build filter dict
             task_filter = filters.task.value if filters and filters.task else None
             tags_filter = filters.tags if filters and filters.tags else None
 
-            # Create filter dictionary with supported parameters only
             filter_dict = {}
             if task_filter:
                 filter_dict["task"] = task_filter
             if tags_filter:
-                filter_dict["tags"] = tags_filter  # type: ignore[assignment]
+                filter_dict["tags"] = tags_filter
 
-            direction = "desc"  # Default direction for sorting
-            direction_value = -1 if direction == "desc" else 1
+            direction_value = -1  # desc
 
-            # Search models using HfApi
-            models = self.hf_api.list_models(
-                search=query,
-                filter=filter_dict if filter_dict else None,
-                sort=sort.value,
-                direction=direction_value,
-                limit=limit,
+            # Run blocking HF API call in thread pool
+            models = await asyncio.wait_for(
+                asyncio.to_thread(
+                    self.hf_api.list_models,
+                    search=query,
+                    filter=filter_dict if filter_dict else None,
+                    sort=sort.value,
+                    direction=direction_value,
+                    limit=limit + offset,
+                ),
+                timeout=30.0
             )
 
-            # Convert to our models and apply offset
-            results: List[ModelInfoShort] = []
-            for i, model in enumerate(models):
-                if i < offset:
-                    continue
-                if len(results) >= limit:
-                    break
+            # Convert to list and apply offset/limit
+            model_list = list(models)[offset:offset + limit]
 
+            results: List[ModelInfoShort] = []
+            for model in model_list:
                 model_info = await self._convert_to_model_info_short(model)
                 results.append(model_info)
 
@@ -117,27 +99,18 @@ class HuggingFaceService:
             raise
 
     async def get_model_details(
-        self, author: str, model_name: str
+            self, author: str, model_name: str
     ) -> ModelInfoDetailed:
-        """Get detailed information about a specific model
-
-        Args:
-            author: Model author/organization
-            model_name: Model name
-
-        Returns:
-            ModelInfoDetailed object
-
-        Raises:
-            aiohttp.ClientError: If model not found or API error
-        """
         repo_id = f"{author}/{model_name}"
 
         try:
             logger.info(f"Getting model details for {repo_id}")
 
-            # Get model info from HF API
-            model_info = self.hf_api.model_info(repo_id)
+            # FIX: Wrap blocking call
+            model_info = await asyncio.to_thread(
+                self.hf_api.model_info,
+                repo_id
+            )
 
             # Get README content
             readme_content = await self._get_model_readme(repo_id)
@@ -155,23 +128,13 @@ class HuggingFaceService:
             raise
 
     async def find_gguf_providers(
-        self, author: str, model_name: str
+            self, author: str, model_name: str
     ) -> List[GGUFProvider]:
-        """Find and rank GGUF providers for a model
-
-        Args:
-            author: Original model author
-            model_name: Original model name
-
-        Returns:
-            List of GGUFProvider objects, sorted by recommendation
-        """
         base_repo_id = f"{author}/{model_name}"
 
         try:
             logger.info(f"Finding GGUF providers for {base_repo_id}")
 
-            # Search for GGUF versions
             search_queries = [
                 f"{model_name} GGUF",
                 f"{author} {model_name} GGUF",
@@ -182,7 +145,12 @@ class HuggingFaceService:
             seen_repos = set()
 
             for query in search_queries:
-                models = self.hf_api.list_models(search=query, limit=50)
+                # FIX: Wrap blocking call
+                models = await asyncio.to_thread(
+                    self.hf_api.list_models,
+                    search=query,
+                    limit=50
+                )
 
                 for model in models:
                     if model.modelId in seen_repos:
@@ -213,21 +181,30 @@ class HuggingFaceService:
     async def _get_model_readme(self, repo_id: str) -> Optional[str]:
         """Get README content for a model"""
         try:
-            # Try to get README file
-            files = self.hf_api.list_repo_files(repo_id)
-            readme_files = [f for f in files if f.lower().startswith("readme")]
+            # FIX: Wrap blocking calls
+            files = await asyncio.to_thread(
+                self.hf_api.list_repo_files,
+                repo_id
+            )
 
+            readme_files = [f for f in files if f.lower().startswith("readme")]
             if not readme_files:
                 return None
 
-            # Get the first README file content
             readme_file = readme_files[0]
-            content = self.hf_api.hf_hub_download(
-                repo_id=repo_id, filename=readme_file, repo_type="model"
+            content_path = await asyncio.to_thread(
+                self.hf_api.hf_hub_download,
+                repo_id=repo_id,
+                filename=readme_file,
+                repo_type="model"
             )
 
-            with open(content, "r", encoding="utf-8") as f:
-                return f.read()
+            # File reading is also blocking
+            def read_file():
+                with open(content_path, "r", encoding="utf-8") as f:
+                    return f.read()
+
+            return await asyncio.to_thread(read_file)
 
         except Exception as e:
             logger.warning(f"Could not get README for {repo_id}: {e}")
@@ -236,7 +213,11 @@ class HuggingFaceService:
     async def _has_gguf_files(self, repo_id: str) -> bool:
         """Check if repository contains GGUF files"""
         try:
-            files = self.hf_api.list_repo_files(repo_id)
+            # FIX: Wrap blocking call
+            files = await asyncio.to_thread(
+                self.hf_api.list_repo_files,
+                repo_id
+            )
             return any(f.endswith(".gguf") for f in files)
         except Exception:
             return False

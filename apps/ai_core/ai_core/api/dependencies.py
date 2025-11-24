@@ -8,13 +8,20 @@ from apps.ai_core.ai_core.logic.huggingface_service import HuggingFaceService
 from apps.ai_core.ai_core.logic.download_manager import DownloadManager
 from apps.ai_core.ai_core.logic.local_storage import LocalStorage
 
+from typing import AsyncGenerator, Optional
+from contextlib import asynccontextmanager
 
 security = HTTPBearer()
+_hf_service: Optional[HuggingFaceService] = None
 
 
-def get_hf_service():
+async def get_hf_service() -> HuggingFaceService:
     """Get HuggingFace service instance"""
-    return HuggingFaceService()
+    global _hf_service
+    if _hf_service is None:
+        _hf_service = HuggingFaceService()
+        await _hf_service.__aenter__()
+    return _hf_service
 
 
 def get_download_manager():

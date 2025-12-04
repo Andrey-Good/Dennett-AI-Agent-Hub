@@ -1,8 +1,16 @@
 {
   "ExpandedNodes": [
     "",
-    "\\frontend\\src-tauri"
+    "\\frontend",
+    "\\frontend\\src",
+    "\\frontend\\src-tauri\\src",
+    "\\frontend\\src\\api",
+    "\\frontend\\src\\assets",
+    "\\frontend\\src\\components",
+    "\\frontend\\src\\lib",
+    "\\frontend\\src\\stores",
+    "\\frontend\\src\\types"
   ],
-  "SelectedNode": "\\README.md",
+  "SelectedNode": "\\frontend\\src\\components\\ModelInfo.tsx",
   "PreviewInSolutionExplorer": false
 }

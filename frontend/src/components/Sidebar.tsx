@@ -2,8 +2,12 @@
 import React from 'react';
 import { useModelStore } from '../stores/modelStore';
 
-export function Sidebar() {
-  const { filters, updateFilters } = useModelStore();
+interface SidebarProps {
+  onChatOpen: (modelId?: string) => void;
+}
+
+export function Sidebar({ onChatOpen }: SidebarProps) {
+  const { filters, updateFilters, selectedModel } = useModelStore();
   const [activeTab, setActiveTab] = React.useState('main');
 
   const tasks = [
@@ -17,9 +21,11 @@ export function Sidebar() {
     { id: 'text-to-video', label: 'Text-to-Video' }
   ];
 
+  console.log('Sidebar получил onChatOpen:', typeof onChatOpen, onChatOpen);
+  console.log('selectedModel:', selectedModel);
+
   return (
     <div className="w-[350px] bg-[#0d1117] flex h-screen border-r border-gray-800">
-      {/* Icon Bar - Always visible on left */}
       <div className="w-16 flex flex-col items-center py-4 gap-4 border-r border-gray-800">
         <button className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors" title="Microphone">
           <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
@@ -32,7 +38,19 @@ export function Sidebar() {
             <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
           </svg>
         </button>
-        <button className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors" title="Chat">
+        <button 
+          onClick={() => {
+            console.log('🔥 КЛИК! Тип onChatOpen:', typeof onChatOpen);
+            console.log('🔥 selectedModel?.id:', selectedModel?.id);
+            if (typeof onChatOpen === 'function') {
+              onChatOpen(selectedModel?.id);
+            } else {
+              console.error('❌ onChatOpen НЕ ФУНКЦИЯ!');
+            }
+          }}
+          className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors" 
+          title="Chat"
+        >
           <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
             <path d="M2.678 11.894a1 1 0 0 1 .287.801 10.97 10.97 0 0 1-.398 2c1.395-.323 2.247-.697 2.634-.893a1 1 0 0 1 .71-.074A8.06 8.06 0 0 0 8 14c3.996 0 7-2.807 7-6 0-3.192-3.004-6-7-6S1 4.808 1 8c0 1.468.617 2.83 1.678 3.894zm-.493 3.905a21.682 21.682 0 0 1-.713.129c-.2.032-.352-.176-.273-.362a9.68 9.68 0 0 0 .244-.637l.003-.01c.248-.72.45-1.548.524-2.319C.743 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7-3.582 7-8 7a9.06 9.06 0 0 1-2.347-.306c-.52.263-1.639.742-3.468 1.105z"/>
           </svg>
@@ -61,9 +79,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Content Area - Always visible */}
       <div className="flex-1 overflow-y-auto p-4">
-        {/* Tabs */}
         <div className="flex gap-2 mb-4">
           {['Main', 'Tasks', 'Languages', 'Licence'].map((tab) => (
             <button
@@ -80,7 +96,6 @@ export function Sidebar() {
           ))}
         </div>
 
-        {/* Weight Slider */}
         <div className="mb-4">
           <div className="flex justify-between text-xs mb-1.5 text-gray-400">
             <span>Weight</span>
@@ -107,7 +122,6 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* Tasks */}
         <div>
           <h3 className="text-xs font-medium mb-2 text-gray-400">Tasks</h3>
           <div className="space-y-0.5">
@@ -137,7 +151,6 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* Bottom Button */}
         <div className="mt-auto pt-4 border-t border-gray-800">
           <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs text-gray-400 hover:bg-gray-800">
             <span className="w-3 h-3 rounded-full bg-white"></span>

@@ -4,14 +4,19 @@ import { ModelInfo } from './ModelInfo';
 import { Header } from './Header';
 import { useModelStore } from '../stores/modelStore';
 
-export function ModelGrid() {
+interface ModelGridProps {
+  onChatOpen: (modelId: string) => void;
+}
+
+export function ModelGrid({ onChatOpen }: ModelGridProps) {
   const { getFilteredModels, searchModels, isLoading } = useModelStore();
   const models = getFilteredModels();
 
   useEffect(() => {
-    // Загрузить популярные модели при монтировании (пустой запрос)
     searchModels('');
   }, []);
+
+  console.log('ModelGrid получил onChatOpen:', onChatOpen);
 
   return (
     <div className="h-screen flex flex-col bg-[#0f1419]">
@@ -25,7 +30,7 @@ export function ModelGrid() {
         ) : models.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
             {models.map((model) => (
-              <ModelCard key={model.id} model={model} />
+              <ModelCard key={model.id} model={model} onChatOpen={onChatOpen} />
             ))}
           </div>
         ) : (
@@ -35,7 +40,8 @@ export function ModelGrid() {
         )}
       </div>
       
-      <ModelInfo />
+      <ModelInfo onChatOpen={onChatOpen} />
+
     </div>
   );
 }

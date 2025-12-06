@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5208';
+const API_BASE = 'http://localhost:8000';
 
 async function fetchAPI(url: string, options: RequestInit = {}) {
   try {

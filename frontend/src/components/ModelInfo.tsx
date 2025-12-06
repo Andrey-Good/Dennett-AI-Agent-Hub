@@ -1,28 +1,43 @@
-﻿import { useModelStore } from '../stores/modelStore';
+﻿import { useState } from 'react';
+import { useModelStore } from '../stores/modelStore';
 import { Sidebar } from './Sidebar';
 
-export function ModelInfo() {
+interface ModelInfoProps {
+  onChatOpen: (modelId?: string) => void;
+}
+
+export function ModelInfo({ onChatOpen }: ModelInfoProps) {
   const { selectedModel, selectModel } = useModelStore();
+  const [showExtendedInfo, setShowExtendedInfo] = useState(false);
 
   if (!selectedModel) return null;
 
-  // Моковые версии для примера
   const versions = selectedModel.versions || [
     { id: '1', name: 'unsloth/DeepSeek-V3.1-Terminus-GGUF', size: '3.9 mi', updated: '7 days ago' },
     { id: '2', name: 'unsloth/DeepSeek-V3.1-Terminus-GGUF', size: '3.9 mi', updated: '7 days ago' },
     { id: '3', name: 'unsloth/DeepSeek-V3.1-Terminus-GGUF', size: '3.9 mi', updated: '7 days ago' },
   ];
 
+  // Моковые данные для таблицы
+  const modelFiles = [
+    {
+      name: 'DeepSeek-V3.1-Terminus-IQ4_NL-00001-of-00008.gguf',
+      fineTune: 'Присутствует только если есть разные варианты файтюнинга',
+      quantum: 'IQ4_NL',
+      context: '128',
+      count: '379Gb',
+      architecture: 'Столбец архитектуры присутствует только если у разных файлов разные архитектуры',
+      partCount: '7',
+      ggufVersion: '1'
+    }
+  ];
+
   return (
     <div className="fixed inset-0 z-50 bg-[#0f1419] flex">
-      {/* Sidebar слева */}
-      <Sidebar />
+      <Sidebar onChatOpen={onChatOpen} />
       
-      {/* Основной контент */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Центральная часть с информацией */}
         <div className="flex-1 overflow-y-auto">
-          {/* Хедер с кнопкой назад и поиском */}
           <div className="bg-[#1a1f2e] border-b border-gray-800 px-6 py-4 flex items-center gap-4">
             <button 
               onClick={() => selectModel(null)}
@@ -49,9 +64,7 @@ export function ModelInfo() {
             </div>
           </div>
 
-          {/* Контент модели */}
-          <div className="p-6 max-w-4xl">
-            {/* Заголовок */}
+          <div className="p-6 max-w-5xl mx-auto">
             <div className="mb-6">
               <h1 className="text-3xl font-bold text-white mb-2">{selectedModel.name}</h1>
               <div className="flex items-center gap-3 text-sm">
@@ -67,37 +80,92 @@ export function ModelInfo() {
               </div>
             </div>
 
-            {/* Табы */}
-            <div className="border-b border-gray-700 mb-6">
+            <div className="border-b border-gray-700 mb-6 flex items-center justify-between">
               <div className="flex gap-6 text-sm">
                 <button className="pb-3 border-b-2 border-white text-white">Model card</button>
                 <button className="pb-3 text-gray-400 hover:text-white transition">Files and versions</button>
                 <button className="pb-3 text-gray-400 hover:text-white transition">Community</button>
               </div>
+              
+              {/* Toggle Extended Information */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">extended information</span>
+                <button
+                  onClick={() => setShowExtendedInfo(!showExtendedInfo)}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    showExtendedInfo ? 'bg-blue-600' : 'bg-gray-700'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                      showExtendedInfo ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
 
-            {/* Описание */}
+            {/* Extended Information Table */}
+            {showExtendedInfo && (
+              <div className="mb-6 overflow-x-auto">
+                <table className="w-full border border-gray-700 rounded-lg overflow-hidden">
+                  <thead className="bg-[#1a1f2e]">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 border-b border-gray-700">Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 border-b border-gray-700">Fine-tune</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 border-b border-gray-700">Quantum</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 border-b border-gray-700">Context</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 border-b border-gray-700">Count</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 border-b border-gray-700">Architecture</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 border-b border-gray-700">Part_count</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 border-b border-gray-700">GGUF version</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 border-b border-gray-700">Download</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modelFiles.map((file, index) => (
+                      <tr key={index} className="border-b border-gray-800 hover:bg-[#1a1f2e] transition">
+                        <td className="px-4 py-3 text-sm text-gray-300">{file.name}</td>
+                        <td className="px-4 py-3 text-xs text-gray-400">{file.fineTune}</td>
+                        <td className="px-4 py-3 text-sm text-gray-300">{file.quantum}</td>
+                        <td className="px-4 py-3 text-sm text-gray-300">{file.context}</td>
+                        <td className="px-4 py-3 text-sm text-gray-300">{file.count}</td>
+                        <td className="px-4 py-3 text-xs text-gray-400">{file.architecture}</td>
+                        <td className="px-4 py-3 text-sm text-gray-300 text-center">{file.partCount}</td>
+                        <td className="px-4 py-3 text-sm text-gray-300 text-center">{file.ggufVersion}</td>
+                        <td className="px-4 py-3">
+                          <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition">
+                            Download
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
             <div className="prose prose-invert max-w-none">
-              <p className="text-gray-300 mb-4">{selectedModel.description}</p>
+              <h2 className="text-xl font-semibold text-white mb-4">text-generation</h2>
               
-              <p className="text-gray-300 mb-4">
+              <p className="text-gray-300 mb-4 leading-relaxed">
                 Whisper is a state-of-the-art model for automatic speech recognition (ASR) and speech translation, 
                 proposed in the paper Robust Speech Recognition via Large-Scale Weak Supervision by Alec Radford et al. 
                 from OpenAI. Trained on &gt;5M hours of labeled data, Whisper demonstrates a strong ability to generalise 
                 to many datasets and domains in a zero-shot setting.
               </p>
 
-              <p className="text-gray-300 mb-4">
+              <p className="text-gray-300 mb-4 leading-relaxed">
                 Whisper large-v3 has the same architecture as the previous large and large-v2 models, except for the 
                 following minor differences:
               </p>
 
               <ol className="list-decimal list-inside text-gray-300 mb-4 space-y-2">
-                <li>The spectrogram input uses 128 Mel frequency bins instead of 80</li>
-                <li>A new language token for Cantonese</li>
+                <li className="leading-relaxed">The spectrogram input uses 128 Mel frequency bins instead of 80</li>
+                <li className="leading-relaxed">A new language token for Cantonese</li>
               </ol>
 
-              <p className="text-gray-300">
+              <p className="text-gray-300 leading-relaxed">
                 The Whisper large-v3 model was trained on 1 million hours of weakly labeled audio and 4 million hours 
                 of pseudo-labeled audio collected using Whisper large-v2. The model was trained for 2.0 epochs over 
                 this mixture dataset.
@@ -106,7 +174,6 @@ export function ModelInfo() {
           </div>
         </div>
 
-        {/* Правая панель с версиями */}
         <div className="w-80 bg-[#1a1f2e] border-l border-gray-800 overflow-y-auto">
           <div className="p-4">
             <h3 className="text-sm font-semibold text-white mb-4">Versions:</h3>

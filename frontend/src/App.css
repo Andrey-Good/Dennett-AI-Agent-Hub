@@ -15,6 +15,7 @@ html, body, #root {
     color: white;
 }
 
+/* Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -33,6 +34,7 @@ html, body, #root {
         background: #374151;
     }
 
+/* Range Slider */
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -41,18 +43,92 @@ input[type="range"] {
     input[type="range"]::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
-        width: 14px;
-        height: 14px;
-        background: #3b82f6;
-        cursor: pointer;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        cursor: pointer;
+        border: 3px solid #0f1419;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+        transition: all 0.2s ease;
     }
 
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            transform: scale(1.15);
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.7);
+        }
+
     input[type="range"]::-moz-range-thumb {
-        width: 14px;
-        height: 14px;
-        background: #3b82f6;
-        cursor: pointer;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
-        border: none;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        cursor: pointer;
+        border: 3px solid #0f1419;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+        transition: all 0.2s ease;
     }
+
+        input[type="range"]::-moz-range-thumb:hover {
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            transform: scale(1.15);
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.7);
+        }
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-25%);
+    }
+}
+
+.animate-bounce {
+    animation: bounce 1s infinite;
+}
+
+/* Slider Gradient */
+.slider-gradient {
+    transition: background 0.15s ease;
+}
+
+/* Smooth transitions */
+.transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}

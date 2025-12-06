@@ -2,8 +2,8 @@ import pytest
 from unittest.mock import AsyncMock, patch, Mock
 
 # Import the classes to test
-from model_manager.core.services.huggingface_service import HuggingFaceService
-from model_manager.core.models import (
+from apps.ai_core.ai_core.logic.huggingface_service import HuggingFaceService
+from apps.ai_core.ai_core.db.models import (
     ModelInfoShort,
     ModelInfoDetailed,
     GGUFProvider,
@@ -62,11 +62,11 @@ class TestHuggingFaceService:
         """Fixture to create HuggingFaceService instance"""
         with (
             patch(
-                "model_manager.core.services.huggingface_service.HfApi",
+                "apps.ai_core.ai_core.logic.huggingface_service.HfApi",
                 return_value=mock_hf_api,
             ),
             patch(
-                "model_manager.core.services.huggingface_service.aiohttp.ClientSession",
+                "apps.ai_core.ai_core.logic.huggingface_service.aiohttp.ClientSession",
                 return_value=mock_aiohttp_session,
             ),
         ):
@@ -403,7 +403,7 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
     def test_service_without_token(self):
         """Test service creation without token (public access)"""
         with patch(
-            "model_manager.core.services.huggingface_service.HfApi"
+            "apps.ai_core.ai_core.logic.huggingface_service.HfApi"
         ) as mock_hf_api:
             HuggingFaceService()
 
@@ -413,7 +413,7 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
     def test_service_with_token(self):
         """Test service creation with token (private access)"""
         with patch(
-            "model_manager.core.services.huggingface_service.HfApi"
+            "apps.ai_core.ai_core.logic.huggingface_service.HfApi"
         ) as mock_hf_api:
             test_token = "hf_test_token_123"
             HuggingFaceService(token=test_token)
@@ -427,7 +427,7 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
 
     def test_service_initialization(self):
         """Test service initialization and trusted providers"""
-        with patch("model_manager.core.services.huggingface_service.HfApi"):
+        with patch("ai_core.logic.huggingface_service.HfApi"):
             service = HuggingFaceService()
 
             # Verify trusted providers are set
@@ -442,9 +442,9 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
         mock_session = AsyncMock()
 
         with (
-            patch("model_manager.core.services.huggingface_service.HfApi"),
+            patch("apps.ai_core.ai_core.logic.huggingface_service.HfApi"),
             patch(
-                "model_manager.core.services.huggingface_service.aiohttp.ClientSession",
+                "apps.ai_core.ai_core.logic.huggingface_service.aiohttp.ClientSession",
                 return_value=mock_session,
             ),
         ):

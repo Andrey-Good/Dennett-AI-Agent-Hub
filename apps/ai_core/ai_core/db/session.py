@@ -7,7 +7,7 @@ and provides utilities for database operations.
 """
 
 from typing import Generator, Optional
-from sqlalchemy import create_engine, event, Engine
+from sqlalchemy import create_engine, event, Engine, text
 from sqlalchemy.orm import sessionmaker, Session, scoped_session
 from pathlib import Path
 import logging
@@ -189,21 +189,16 @@ class DatabaseManager:
         if self.engine:
             self.engine.dispose()
             logger.info("Database connections closed")
-    
+
     def health_check(self) -> bool:
-        """
-        Check database health by executing a simple query.
-        
-        Returns:
-            True if database is accessible, False otherwise
-        """
+        """Check database health by executing a simple query."""
         try:
             if self.engine is None:
                 return False
-            
+
             with self.engine.connect() as connection:
-                connection.execute("SELECT 1")
-            
+                connection.execute(text("SELECT 1"))  # <-- use text()
+
             logger.info("Database health check passed")
             return True
         except Exception as e:

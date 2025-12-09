@@ -12,6 +12,13 @@ from pathlib import Path
 import logging
 from typing import Optional
 
+from apps.ai_core.ai_core.db.session import (
+    DatabaseConfig,
+    initialize_database,
+    get_database_manager,
+)
+from apps.ai_core.ai_core.db.orm_models import Base
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -50,30 +57,26 @@ def get_database_url(db_dir: Optional[str] = None) -> str:
 def init_database(db_url: Optional[str] = None, drop_existing: bool = False) -> bool:
     """
     Initialize the database with all required tables.
-    
+
     Args:
         db_url: Optional SQLAlchemy database URL. If None, uses default.
         drop_existing: If True, drop existing tables before creation (be careful!)
-    
+
     Returns:
         True if initialization successful, False otherwise
-    
+
     Raises:
         Exception: If database initialization fails
     """
     try:
         logger.info("Starting database initialization...")
-        
-        # Import database components
-        from apps.ai_core.ai_core.db.session import DatabaseConfig, DatabaseManager
-        from apps.ai_core.ai_core.db.orm_models import Base
-        
+
         # Get database URL
         if db_url is None:
             db_url = get_database_url()
-        
+
         logger.info(f"Using database URL: {db_url}")
-        
+
         # Create database configuration
         config = DatabaseConfig(
             database_url=db_url,
@@ -81,20 +84,19 @@ def init_database(db_url: Optional[str] = None, drop_existing: bool = False) -> 
             pool_size=5,
             max_overflow=10
         )
-        
-        # Initialize database manager
-        db_manager = DatabaseManager(config)
-        engine = db_manager.initialize()
-        
+
+        # Initialize database manager (this already calls initialize() internally)
+        db_manager = initialize_database(config)
+
         # Drop tables if requested
         if drop_existing:
             logger.warning("Dropping existing tables...")
             db_manager.drop_tables(Base)
             logger.info("Tables dropped")
-        
+
         # Create all tables from ORM models
         db_manager.create_tables(Base)
-        
+
         # Perform health check
         if db_manager.health_check():
             logger.info("✅ Database initialized successfully")
@@ -102,7 +104,7 @@ def init_database(db_url: Optional[str] = None, drop_existing: bool = False) -> 
         else:
             logger.error("❌ Database health check failed")
             return False
-        
+
     except Exception as e:
         logger.error(f"❌ Database initialization failed: {e}", exc_info=True)
         raise
@@ -178,39 +180,40 @@ def seed_database() -> None:
 def verify_database() -> bool:
     """
     Verify database integrity and list basic statistics.
-    
+
     Returns:
         True if database is valid, False otherwise
     """
     try:
         logger.info("Verifying database...")
-        
+
         from apps.ai_core.ai_core.db.session import get_database_manager
+        from apps.ai_core.ai_core.db.orm_models import AgentRun
         from apps.ai_core.ai_core.db.repositories import (
             AgentRepository, AgentRunRepository, AgentTestCaseRepository
         )
-        
+
         db = get_database_manager()
         session = db.create_session()
-        
+
         try:
             agent_repo = AgentRepository(session)
             run_repo = AgentRunRepository(session)
             test_repo = AgentTestCaseRepository(session)
-            
+
             agent_count = agent_repo.count_all()
-            run_count = session.query(AgentRunRepository).count() if run_repo else 0
-            
+            run_count = session.query(AgentRun).count()
+
             logger.info(f"📊 Database Statistics:")
             logger.info(f"   Agents: {agent_count}")
             logger.info(f"   Agent Runs: {run_count}")
-            
+
             logger.info("✅ Database verification passed")
             return True
-        
+
         finally:
             session.close()
-    
+
     except Exception as e:
         logger.error(f"❌ Database verification failed: {e}", exc_info=True)
         return False

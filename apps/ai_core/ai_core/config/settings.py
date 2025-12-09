@@ -79,6 +79,56 @@ class ModelManagerConfig(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
+    # Database Settings
+    database_url: Optional[str] = Field(
+        default=None,
+        alias="DATABASE_URL",
+        description="SQLAlchemy database URL"
+    )
+
+    # If database_url is not provided, construct from app data directory
+    @property
+    def get_database_url(self) -> str:
+        """Get database URL, falling back to default SQLite location."""
+        if self.database_url:
+            return self.database_url
+
+        # Default SQLite database in AppData
+        db_path = Path(APP_DATA_DIR) / "db" / "storage.db"
+        return f"sqlite:///{db_path}"
+
+    # Database Connection Settings
+    database_echo: bool = Field(
+        default=False,
+        alias="DATABASE_ECHO",
+        description="Enable SQL query logging"
+    )
+
+    database_pool_size: int = Field(
+        default=10,
+        alias="DATABASE_POOL_SIZE",
+        description="Connection pool size"
+    )
+
+    database_max_overflow: int = Field(
+        default=20,
+        alias="DATABASE_MAX_OVERFLOW",
+        description="Maximum overflow connections"
+    )
+
+    # Database Initialization
+    auto_create_tables: bool = Field(
+        default=True,
+        alias="AUTO_CREATE_TABLES",
+        description="Automatically create tables on startup"
+    )
+
+    database_seed_on_init: bool = Field(
+        default=False,
+        alias="DATABASE_SEED_ON_INIT",
+        description="Seed database with sample data on initialization"
+    )
+
 
 # Global config instance
 config = ModelManagerConfig()

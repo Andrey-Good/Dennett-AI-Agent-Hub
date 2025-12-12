@@ -9,6 +9,8 @@ import logging
 import asyncio
 import aiofiles
 from apps.ai_core.ai_core.db.models import LocalModel, ImportAction
+from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
+from apps.ai_core.ai_core.config.settings import config
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +21,19 @@ class LocalStorage:
     def __init__(
         self, storage_dir: Optional[str] = None, metadata_file: Optional[str] = None
     ):
-        from apps.ai_core.ai_core.config.settings import config
 
         if storage_dir is None:
-            storage_dir = config.models_dir
+            try:
+                if file_system_manager.is_asset_root_initialized():
+                    storage_dir = str(file_system_manager.get_models_dir())
+                    logger.info(f"Using FileSystemManager for storage: {storage_dir}")
+                else:
+                    storage_dir = config.models_dir
+                    logger.info(f"Using config for storage (Phase 2 not initialized): {storage_dir}")
+            except Exception as e:
+                storage_dir = config.models_dir
+                logger.warning(f"Fallback to config storage: {e}")
+
         if metadata_file is None:
             metadata_file = config.metadata_file
 

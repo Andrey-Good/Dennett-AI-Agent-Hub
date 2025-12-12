@@ -140,6 +140,9 @@ class DownloadStatus(BaseModel):
     completed_at: Optional[datetime] = Field(
         None, description="Download completion time"
     )
+    local_file_path: Optional[str] = Field(
+        None, description="Local path where file is stored after download"
+    )
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat() if v else None}

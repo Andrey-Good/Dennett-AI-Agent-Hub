@@ -135,6 +135,22 @@ config = ModelManagerConfig()
 settings = config  # Алиас для совместимости с main.py
 
 
+def get_filesystem_paths():
+    """Get paths from FileSystemManager if available"""
+    try:
+        from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
+        return {
+            'models_dir': str(file_system_manager.get_models_dir()) if file_system_manager.is_asset_root_initialized() else str(APP_DATA_DIR / "models"),
+            'agents_dir': str(file_system_manager.get_agents_dir()),
+            'custom_nodes_dir': str(file_system_manager.get_custom_nodes_dir()),
+            'custom_triggers_dir': str(file_system_manager.get_custom_triggers_dir()),
+            'log_dir': str(file_system_manager.get_log_path().parent),
+        }
+    except:
+        # Fallback to hardcoded paths if FileSystemManager not available yet
+        return None
+
+
 def validate_directories():
     """Create and validate required directories"""
     directories = [

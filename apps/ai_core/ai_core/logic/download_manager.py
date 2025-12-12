@@ -8,6 +8,8 @@ from fastapi import BackgroundTasks
 from datetime import datetime
 import logging
 from apps.ai_core.ai_core.db.models import DownloadStatus, DownloadState
+from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
+from apps.ai_core.ai_core.config.settings import config
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +26,24 @@ class DownloadManager:
             download_dir: Directory to store downloaded files
             max_concurrent: Maximum concurrent downloads
         """
-        from  apps.ai_core.ai_core.config.settings import config
 
-        # Use config values if not provided
-        if download_dir is None:
-            download_dir = config.downloads_dir
         if max_concurrent is None:
             max_concurrent = config.max_concurrent_downloads
+
+        if download_dir is None:
+            try:
+                # Try to use FileSystemManager cache directory
+                if file_system_manager.is_asset_root_initialized():
+                    download_dir = str(file_system_manager.get_cache_dir() / "downloads")
+                    logger.info(f"Using FileSystemManager for downloads: {download_dir}")
+                else:
+                    # Fallback to config during Phase 1 (before asset initialization)
+                    download_dir = config.downloads_dir
+                    logger.info(f"Using config for downloads (Phase 2 not initialized): {download_dir}")
+            except Exception as e:
+                # Ultimate fallback to config
+                download_dir = config.downloads_dir
+                logger.warning(f"Fallback to config downloads directory: {e}")
 
         self.download_dir = Path(download_dir)
         self.download_dir.mkdir(exist_ok=True, parents=True)
@@ -43,6 +56,8 @@ class DownloadManager:
 
         # SSE subscribers
         self.subscribers: Dict[str, asyncio.Queue] = {}
+
+        logger.info(f"DownloadManager initialized with directory: {self.download_dir}")
 
     async def start_download(
         self, repo_id: str, filename: str, background_tasks: BackgroundTasks
@@ -188,7 +203,7 @@ class DownloadManager:
 
         for download_id in to_remove:
             self.active_downloads.pop(download_id, None)
-            self.download_tasks.pop(download_id, None)
+            await self.download_tasks.pop(download_id, None)
 
         logger.info(f"Cleaned up {len(to_remove)} old download records")
 
@@ -204,30 +219,51 @@ class DownloadManager:
                 # Build download URL
                 url = f"https://huggingface.co/{status.repo_id}/resolve/main/{status.filename}"
 
-                # Create target file path
-                target_path = (
-                    self.download_dir
-                    / f"{status.repo_id.replace('/', '_')}_{status.filename}"
-                )
-                target_path.parent.mkdir(exist_ok=True, parents=True)
+                # Create temporary download path
+                temp_filename = f"{download_id}_{status.filename}"
+                temp_path = self.download_dir / temp_filename
+                temp_path.parent.mkdir(exist_ok=True, parents=True)
 
                 # Download file
                 async with aiohttp.ClientSession() as session:
                     await self._download_with_progress(
-                        session, url, target_path, status
+                        session, url, temp_path, status
                     )
+
+                # Move to final location in models directory (if Phase 2 initialized)
+                final_path = temp_path
+                try:
+                    if file_system_manager.is_asset_root_initialized():
+                        models_dir = file_system_manager.get_models_dir()
+                        final_filename = f"{status.repo_id.replace('/', '_')}_{status.filename}"
+                        final_path = models_dir / final_filename
+
+                        # Move from temp download location to models directory
+                        import shutil
+                        shutil.move(str(temp_path), str(final_path))
+                        logger.info(f"Moved downloaded file to: {final_path}")
+                except Exception as e:
+                    logger.warning(f"Could not move to models directory: {e}. File remains at: {temp_path}")
+                    final_path = temp_path
+
+                # Store final path in status for later retrieval
+                status.local_file_path = str(final_path)
 
                 # Mark as completed
                 status.status = DownloadState.COMPLETED
                 status.progress_percent = 100.0
                 status.completed_at = datetime.utcnow()
 
-                logger.info(f"Download completed: {download_id}")
+                logger.info(f"Download completed: {download_id} -> {final_path}")
 
         except asyncio.CancelledError:
             status.status = DownloadState.CANCELLED
             status.completed_at = datetime.utcnow()
             logger.info(f"Download cancelled: {download_id}")
+
+            # Clean up temp file if exists
+            if temp_path.exists():
+                temp_path.unlink()
 
         except Exception as e:
             status.status = DownloadState.FAILED
@@ -235,11 +271,16 @@ class DownloadManager:
             status.completed_at = datetime.utcnow()
             logger.error(f"Download failed {download_id}: {e}")
 
+            # Clean up temp file if exists
+            if temp_path.exists():
+                temp_path.unlink()
+
         finally:
             await self._notify_subscribers(status)
 
             # Clean up task reference
-            self.download_tasks.pop(download_id, None)
+            await self.download_tasks.pop(download_id, None)
+
 
     async def _download_with_progress(
         self,

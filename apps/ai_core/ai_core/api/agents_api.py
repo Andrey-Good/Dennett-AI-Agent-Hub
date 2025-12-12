@@ -419,7 +419,11 @@ def create_test_case(
         )
         return created
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        error_msg = str(e)
+        if "already exists" in error_msg:
+            raise HTTPException(status_code=409, detail=error_msg)
+        else:
+            raise HTTPException(status_code=404, detail=error_msg)
 
 
 @router.delete("/{agent_id}/test-cases/{case_id}", status_code=204)

@@ -40,14 +40,14 @@ async def import_model(
                 error_code="FILE_NOT_FOUND",
                 message=f"Source file not found: {request.file_path}",
                 details=None,
-            ).dict(),
+            ).model_dump(mode='json'),
         )
     except ValueError as e:
         raise HTTPException(
             status_code=400,
             detail=ErrorResponse(
                 error_code="INVALID_FILE", message=str(e), details=None
-            ).dict(),
+            ).model_dump(mode='json'),
         )
     except Exception as e:
         handle_service_error(e, "import_model")

@@ -18,6 +18,7 @@ from apps.ai_core.ai_core.db.session import (
     get_database_manager,
 )
 from apps.ai_core.ai_core.db.orm_models import Base
+from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
 
 # Setup logging
 logging.basicConfig(
@@ -39,17 +40,13 @@ def get_database_url(db_dir: Optional[str] = None) -> str:
         SQLAlchemy database URL
     """
     if db_dir is None:
-        # Use default AppData directory from config
-        from apps.ai_core.ai_core.config.settings import APP_DATA_DIR
-        db_dir = str(APP_DATA_DIR / "db")
-    
-    # Ensure directory exists
-    db_path = Path(db_dir)
-    db_path.mkdir(exist_ok=True, parents=True)
-    
-    # SQLite database file path
-    db_file = db_path / "storage.db"
-    
+        db_file = file_system_manager.get_db_path()
+    else:
+        # Use custom directory
+        db_path = Path(db_dir)
+        db_path.mkdir(exist_ok=True, parents=True)
+        db_file = db_path / "storage.db"
+
     # Return SQLAlchemy URL (SQLite)
     return f"sqlite:///{db_file}"
 

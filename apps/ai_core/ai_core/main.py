@@ -1,9 +1,8 @@
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-
 import logging
 import asyncio
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,8 +15,11 @@ from apps.ai_core.ai_core.db.init_db import get_database_url
 from apps.ai_core.ai_core.api.agents_api import router as agents_router
 
 from apps.ai_core.ai_core.logic.priority_policy import init_priority_policy, get_priority_policy
+from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
 
 from contextlib import asynccontextmanager
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
 # Configure logging
 logging.basicConfig(
@@ -40,12 +42,44 @@ async def lifespan(app: FastAPI):
         db_url = get_database_url()
         db_config = DatabaseConfig(
             database_url=db_url,
-            echo=False,  # Set to True for SQL debugging
+            echo=False,
             pool_size=10,
             max_overflow=20
         )
         initialize_database(db_config)
         logger.info(f"Database initialized successfully at: {db_url}")
+
+        logger.info("Reading asset storage path from database settings...")
+        from apps.ai_core.ai_core.logic.settings_service import SettingsService
+        from apps.ai_core.ai_core.db.session import get_database_manager
+
+        db_manager = get_database_manager()
+        session = db_manager.create_session()
+
+        try:
+            settings_service = SettingsService(session)
+
+            # Get asset path from settings, or use default
+            asset_path = settings_service.get_setting("HEAVY_ASSET_PATH")
+
+            if asset_path is None:
+                # Use default path in user's home directory
+                default_asset_path = Path.home() / "DennettLibrary"
+                asset_path = str(default_asset_path)
+                logger.info(f"No asset path in settings, using default: {asset_path}")
+
+                # Save default to database for future use
+                settings_service.update_setting("HEAVY_ASSET_PATH", asset_path)
+            else:
+                logger.info(f"Asset path from settings: {asset_path}")
+
+            # Initialize Phase 2 of FileSystemManager
+            file_system_manager.set_asset_root_path(asset_path)
+            logger.info(f"FileSystemManager Phase 2 initialized. AssetData root: {asset_path}")
+
+        finally:
+            session.close()
+
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
         raise
@@ -53,8 +87,6 @@ async def lifespan(app: FastAPI):
     aging_task = None
     try:
         logger.info("Initializing PriorityPolicy...")
-        from apps.ai_core.ai_core.logic.priority_policy import init_priority_policy
-        from apps.ai_core.ai_core.db.session import get_database_manager
 
         settings_dict = {
             "PRIORITY_CORRIDORS": {},
@@ -104,6 +136,7 @@ async def lifespan(app: FastAPI):
         db_manager.close()
         logger.info("? Database connections closed")
 
+
 app = FastAPI(
     title="Model Manager API",
     description="AI model lifecycle management for Dennet platform",
@@ -127,7 +160,6 @@ app.include_router(local_models.router)
 app.include_router(storage.router)
 app.include_router(health.router)
 app.include_router(agents_router, prefix="/api", tags=["agents"])
-
 
 if __name__ == "__main__":
     import uvicorn

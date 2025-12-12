@@ -87,6 +87,7 @@ class AgentRun(Base):
     agent_id = Column(String(36), ForeignKey('agents.id', ondelete='CASCADE'), 
                       nullable=False, index=True)
     status = Column(String(50), nullable=False, index=True)  # pending, running, completed, failed, stopped_by_user
+    priority = Column(Integer, nullable=False, default=30, index=True)
     start_time = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
     end_time = Column(DateTime, nullable=True, index=True)
     trigger_type = Column(String(50), nullable=False)  # manual, schedule, webhook, file_system
@@ -98,6 +99,7 @@ class AgentRun(Base):
     __table_args__ = (
         Index('idx_agent_run_status', 'agent_id', 'status'),
         Index('idx_agent_run_time', 'start_time', 'end_time'),
+        Index('idx_agent_run_priority', 'status', 'priority'),
         ForeignKeyConstraint(['agent_id'], ['agents.id']),
     )
     
@@ -164,6 +166,34 @@ class AgentTestCase(Base):
     def __repr__(self) -> str:
         return f"<AgentTestCase(case_id='{self.case_id}', agent_id='{self.agent_id}', name='{self.name}')>"
 
+class Execution(Base):
+    """Task execution queue."""
+    __tablename__ = 'executions'
+
+    execution_id = Column(String(36), primary_key=True)
+    node_id = Column(String(255), nullable=False, index=True)
+    status = Column(String(50), nullable=False, index=True)  # PENDING, RUNNING, COMPLETED, FAILED
+    priority = Column(Integer, nullable=False, index=True)
+    enqueue_ts = Column(Integer, nullable=False, index=True)  # Unix timestamp
+
+    __table_args__ = (
+        Index('idx_exec_priority_queue', 'status', 'priority', 'enqueue_ts'),
+    )
+
+
+class InferenceQueue(Base):
+    """Model inference queue."""
+    __tablename__ = 'inference_queue'
+
+    queue_id = Column(String(36), primary_key=True)
+    model_id = Column(String(255), nullable=False, index=True)
+    status = Column(String(50), nullable=False, index=True)
+    priority = Column(Integer, nullable=False, index=True)
+    enqueue_ts = Column(Integer, nullable=False, index=True)
+
+    __table_args__ = (
+        Index('idx_inference_priority_queue', 'status', 'priority', 'enqueue_ts'),
+    )
 
 # Foreign key constraints (explicit definition for clarity)
 from sqlalchemy import ForeignKeyConstraint

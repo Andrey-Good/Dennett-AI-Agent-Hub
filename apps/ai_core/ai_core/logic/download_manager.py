@@ -24,7 +24,7 @@ class DownloadManager:
             download_dir: Directory to store downloaded files
             max_concurrent: Maximum concurrent downloads
         """
-        from ai_core.config.settings import config
+        from  apps.ai_core.ai_core.config.settings import config
 
         # Use config values if not provided
         if download_dir is None:

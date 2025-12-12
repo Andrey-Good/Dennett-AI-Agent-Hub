@@ -19,15 +19,8 @@ class LocalStorage:
     def __init__(
         self, storage_dir: Optional[str] = None, metadata_file: Optional[str] = None
     ):
-        """Initialize local storage service
+        from apps.ai_core.ai_core.config.settings import config
 
-        Args:
-            storage_dir: Directory to store model files
-            metadata_file: File to store model metadata
-        """
-        from ai_core.config.settings import config
-
-        # Use config values if not provided
         if storage_dir is None:
             storage_dir = config.models_dir
         if metadata_file is None:
@@ -35,32 +28,28 @@ class LocalStorage:
 
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(exist_ok=True, parents=True)
-
         self.metadata_file = self.storage_dir / metadata_file
         self._models_cache: Dict[str, LocalModel] = {}
         self._lock = asyncio.Lock()
+        self._metadata_loaded = False
 
-        # Load existing metadata
-        asyncio.create_task(self._load_metadata())
+    async def _ensure_metadata_loaded(self):
+        """Ensure metadata is loaded before use"""
+        if not self._metadata_loaded:
+            async with self._lock:
+                if not self._metadata_loaded:
+                    await self._load_metadata()
+                    self._metadata_loaded = True
 
     async def list_models(self) -> List[LocalModel]:
-        """Get list of all locally stored models
-
-        Returns:
-            List of LocalModel objects
-        """
+        """Get list of all locally stored models"""
+        await self._ensure_metadata_loaded()
         async with self._lock:
             return list(self._models_cache.values())
 
     async def get_model(self, model_id: str) -> Optional[LocalModel]:
-        """Get specific model by ID
-
-        Args:
-            model_id: Local model identifier
-
-        Returns:
-            LocalModel or None if not found
-        """
+        """Get specific model by ID"""
+        await self._ensure_metadata_loaded()
         async with self._lock:
             return self._models_cache.get(model_id)
 
@@ -89,6 +78,8 @@ class LocalStorage:
             ValueError: If file is not a valid GGUF file
             OSError: If file operations fail
         """
+        await self._ensure_metadata_loaded()
+
         source_path = Path(file_path)
 
         # Validate source file
@@ -179,6 +170,8 @@ class LocalStorage:
         Returns:
             LocalModel object
         """
+        await self._ensure_metadata_loaded()
+
         path = Path(file_path)
         model_id = str(uuid.uuid4())
 
@@ -228,6 +221,7 @@ class LocalStorage:
             ValueError: If model not found
             OSError: If file is in use and force=False
         """
+        await self._ensure_metadata_loaded()
         async with self._lock:
             if model_id not in self._models_cache:
                 raise ValueError(f"Model not found: {model_id}")
@@ -257,22 +251,16 @@ class LocalStorage:
                 raise
 
     async def update_model_access(self, model_id: str):
-        """Update last access time for a model
-
-        Args:
-            model_id: Model ID to update
-        """
+        """Update last access time for a model"""
+        await self._ensure_metadata_loaded()
         async with self._lock:
             if model_id in self._models_cache:
                 self._models_cache[model_id].last_accessed = datetime.utcnow()
                 await self._save_metadata()
 
     async def get_storage_stats(self) -> Dict[str, Any]:
-        """Get storage statistics
-
-        Returns:
-            Dictionary with storage information
-        """
+        """Get storage statistics"""
+        await self._ensure_metadata_loaded()
         async with self._lock:
             total_models = len(self._models_cache)
             total_size = sum(
@@ -293,11 +281,8 @@ class LocalStorage:
             }
 
     async def cleanup_orphaned_files(self) -> List[str]:
-        """Clean up files in storage directory not tracked in metadata
-
-        Returns:
-            List of removed file paths
-        """
+        """Clean up files in storage directory not tracked in metadata"""
+        await self._ensure_metadata_loaded()
         async with self._lock:
             tracked_files = {
                 Path(model.file_path) for model in self._models_cache.values()

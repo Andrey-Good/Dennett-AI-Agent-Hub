@@ -113,6 +113,7 @@ class AgentRunResponse(BaseModel):
     run_id: str = Field(..., description="Run UUID")
     agent_id: str = Field(..., description="Agent UUID")
     status: str = Field(..., description="Run status")
+    priority: int = Field(..., description="Task priority")
     trigger_type: str = Field(..., description="Trigger type")
     start_time: datetime = Field(..., description="Start timestamp")
     end_time: Optional[datetime] = Field(None, description="End timestamp")
@@ -295,13 +296,32 @@ def create_agent_run(
     session: Session = Depends(get_session)
 ):
     """Create a new run for an agent."""
+    from apps.ai_core.ai_core.logic.priority_policy import get_priority_policy, TaskSource
+
+    trigger_to_source = {
+        "manual": TaskSource.MANUAL_RUN,
+        "schedule": TaskSource.TRIGGER,
+        "webhook": TaskSource.TRIGGER,
+        "file_system": TaskSource.TRIGGER,
+        "chat": TaskSource.CHAT,
+        "chat_agent": TaskSource.CHAT_AGENT
+    }
+
+    policy = get_priority_policy()
+    task_source = trigger_to_source.get(run.trigger_type, TaskSource.TRIGGER)
+    priority = policy.assign_priority(
+        source=task_source,
+        parent_priority=None
+    )
+
     run_repo = AgentRunRepository(session)
     
     try:
         created = run_repo.create(
             agent_id=agent_id,
             trigger_type=run.trigger_type,
-            status=run.status
+            status=run.status,
+            priority=priority
         )
         return created
     except ValueError as e:
@@ -399,7 +419,11 @@ def create_test_case(
         )
         return created
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        error_msg = str(e)
+        if "already exists" in error_msg:
+            raise HTTPException(status_code=409, detail=error_msg)
+        else:
+            raise HTTPException(status_code=404, detail=error_msg)
 
 
 @router.delete("/{agent_id}/test-cases/{case_id}", status_code=204)

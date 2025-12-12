@@ -194,7 +194,7 @@ class AgentRunRepository:
         self.session = session
     
     def create(self, agent_id: str, trigger_type: str, 
-               status: str = "pending") -> AgentRun:
+               status: str = "pending", priority: int = 30) -> AgentRun:
         """
         Create a new agent run.
         
@@ -202,6 +202,7 @@ class AgentRunRepository:
             agent_id: UUID of the agent
             trigger_type: How the run was triggered
             status: Initial status (default: "pending")
+            priority: Task priority (default: 30)
             
         Returns:
             Created AgentRun instance
@@ -217,6 +218,7 @@ class AgentRunRepository:
             agent_id=agent_id,
             status=status,
             trigger_type=trigger_type,
+            priority=priority,
             start_time=datetime.utcnow()
         )
         

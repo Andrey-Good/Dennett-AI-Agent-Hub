@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 import json
 import logging
 
-from apps.ai_core.ai_core.db.orm_models import Agent, AgentRun, AgentTestCase
+from apps.ai_core.ai_core.db.orm_models import Agent, AgentRun, AgentTestCase, AgentDraft
 
 logger = logging.getLogger(__name__)
 
@@ -32,25 +32,44 @@ class AgentRepository:
         self.session = session
 
     def create(self, name: str, description: Optional[str] = None,
-               tags: Optional[List[str]] = None) -> Agent:
+               tags: Optional[List[str]] = None, agent_id: Optional[str] = None,
+               version: int = 1, is_active: int = 0,
+               deletion_status: str = 'NONE', file_path: Optional[str] = None) -> Agent:
         """
-        Create a new agent.
-        
+        Create a new agent (v5.0 with versioning support).
+
         Args:
             name: Agent display name
             description: Agent description
             tags: List of tags for categorization
-            
+            agent_id: Optional pre-generated UUIDv7 (for controlled ID generation)
+            version: Initial version number (default: 1)
+            is_active: Whether triggers are active (default: 0)
+            deletion_status: Deletion status (default: 'NONE')
+            file_path: Relative path to agent JSON file
+
         Returns:
             Created Agent instance
-            
+
         Raises:
             ValueError: If name is empty
         """
         if not name or not name.strip():
             raise ValueError("Agent name cannot be empty")
 
-        agent = Agent(name=name, description=description)
+        agent = Agent(
+            name=name,
+            description=description,
+            version=version,
+            is_active=is_active,
+            deletion_status=deletion_status,
+            file_path=file_path
+        )
+
+        # Set custom ID if provided
+        if agent_id:
+            agent.id = agent_id
+
         if tags:
             agent.set_tags(tags)
 
@@ -58,9 +77,7 @@ class AgentRepository:
         self.session.commit()
         self.session.refresh(agent)
 
-        agent.tags = agent.get_tags()
-
-        logger.info(f"Created agent: {agent.id} ({agent.name})")
+        logger.info(f"Created agent: {agent.id} ({agent.name}) v{agent.version}")
         return agent
 
     def get_by_id(self, agent_id: str) -> Optional[Agent]:
@@ -74,8 +91,6 @@ class AgentRepository:
             Agent instance or None if not found
         """
         agent = self.session.query(Agent).filter(Agent.id == agent_id).first()
-        if agent:
-            agent.tags = agent.get_tags()
         return agent
 
     def get_by_name(self, name: str) -> Optional[Agent]:
@@ -89,29 +104,32 @@ class AgentRepository:
             Agent instance or None if not found
         """
         agent = self.session.query(Agent).filter(Agent.name == name).first()
-        if agent:
-            agent.tags = agent.get_tags()
         return agent
 
-    def list_all(self, limit: int = 100, offset: int = 0) -> List[Agent]:
+    def list_all(self, limit: int = 100, offset: int = 0,
+                  include_pending_deletion: bool = False) -> List[Agent]:
         """
         List all agents with pagination.
-        
+
         Args:
             limit: Maximum number of results
             offset: Number of results to skip
-            
+            include_pending_deletion: If False, exclude agents marked for deletion
+
         Returns:
             List of Agent instances
         """
-        agents = self.session.query(Agent) \
-            .order_by(desc(Agent.created_at)) \
+        query = self.session.query(Agent)
+
+        # By default, exclude agents pending deletion (v5.0 soft delete)
+        if not include_pending_deletion:
+            query = query.filter(Agent.deletion_status == 'NONE')
+
+        agents = query \
+            .order_by(desc(Agent.modified_at)) \
             .limit(limit) \
             .offset(offset) \
             .all()
-
-        for agent in agents:
-            agent.tags = agent.get_tags()
 
         return agents
 
@@ -164,8 +182,6 @@ class AgentRepository:
         self.session.commit()
         self.session.refresh(agent)
 
-        agent.tags = agent.get_tags()
-
         logger.info(f"Updated agent: {agent_id}")
         return agent
 
@@ -189,14 +205,155 @@ class AgentRepository:
         logger.info(f"Deleted agent: {agent_id}")
         return True
 
-    def count_all(self) -> int:
+    def count_all(self, include_pending_deletion: bool = False) -> int:
         """
         Count total number of agents.
-        
+
+        Args:
+            include_pending_deletion: If False, exclude agents pending deletion
+
         Returns:
             Number of agents in database
         """
-        return self.session.query(Agent).count()
+        query = self.session.query(Agent)
+        if not include_pending_deletion:
+            query = query.filter(Agent.deletion_status == 'NONE')
+        return query.count()
+
+    # =========================================================================
+    # v5.0 Versioning & Soft Delete Methods
+    # =========================================================================
+
+    def mark_for_deletion(self, agent_id: str) -> Optional[Agent]:
+        """
+        Mark an agent for deletion (soft delete).
+
+        Sets deletion_status to 'PENDING' and is_active to 0.
+        Physical deletion is performed by the GarbageCollector worker.
+
+        Args:
+            agent_id: UUID of the agent
+
+        Returns:
+            Updated Agent instance or None if not found
+        """
+        agent = self.get_by_id(agent_id)
+        if not agent:
+            return None
+
+        agent.deletion_status = 'PENDING'
+        agent.is_active = 0
+        agent.modified_at = datetime.utcnow()
+
+        self.session.commit()
+        self.session.refresh(agent)
+
+        logger.info(f"Marked agent for deletion: {agent_id}")
+        return agent
+
+    def activate(self, agent_id: str) -> Optional[Agent]:
+        """
+        Activate an agent (set is_active to 1).
+
+        Args:
+            agent_id: UUID of the agent
+
+        Returns:
+            Updated Agent instance or None if not found/pending deletion
+        """
+        agent = self.get_by_id(agent_id)
+        if not agent or agent.deletion_status == 'PENDING':
+            return None
+
+        agent.is_active = 1
+        agent.modified_at = datetime.utcnow()
+
+        self.session.commit()
+        self.session.refresh(agent)
+
+        logger.info(f"Activated agent: {agent_id}")
+        return agent
+
+    def deactivate(self, agent_id: str) -> Optional[Agent]:
+        """
+        Deactivate an agent (set is_active to 0).
+
+        Args:
+            agent_id: UUID of the agent
+
+        Returns:
+            Updated Agent instance or None if not found/pending deletion
+        """
+        agent = self.get_by_id(agent_id)
+        if not agent or agent.deletion_status == 'PENDING':
+            return None
+
+        agent.is_active = 0
+        agent.modified_at = datetime.utcnow()
+
+        self.session.commit()
+        self.session.refresh(agent)
+
+        logger.info(f"Deactivated agent: {agent_id}")
+        return agent
+
+    def update_version(self, agent_id: str, new_version: int,
+                       new_file_path: str) -> Optional[Agent]:
+        """
+        Update agent version and file path after deployment.
+
+        Args:
+            agent_id: UUID of the agent
+            new_version: New version number
+            new_file_path: Path to new version file
+
+        Returns:
+            Updated Agent instance or None if not found
+        """
+        agent = self.get_by_id(agent_id)
+        if not agent or agent.deletion_status == 'PENDING':
+            return None
+
+        agent.version = new_version
+        agent.file_path = new_file_path
+        agent.modified_at = datetime.utcnow()
+
+        self.session.commit()
+        self.session.refresh(agent)
+
+        logger.info(f"Updated agent version: {agent_id} -> v{new_version}")
+        return agent
+
+    def list_pending_deletion(self) -> List[Agent]:
+        """
+        List all agents marked for deletion.
+
+        Returns:
+            List of Agent instances with deletion_status='PENDING'
+        """
+        return self.session.query(Agent) \
+            .filter(Agent.deletion_status == 'PENDING') \
+            .all()
+
+    def hard_delete(self, agent_id: str) -> bool:
+        """
+        Permanently delete an agent (used by GarbageCollector).
+
+        Args:
+            agent_id: UUID of the agent
+
+        Returns:
+            True if deleted, False if not found
+        """
+        agent = self.session.query(Agent).filter(Agent.id == agent_id).first()
+        if not agent:
+            return False
+
+        self.session.delete(agent)
+        self.session.commit()
+
+        logger.info(f"Hard deleted agent: {agent_id}")
+        return True
 
 
 class AgentRunRepository:
@@ -450,10 +607,6 @@ class AgentTestCaseRepository:
                 f"and node {node_id}"
             ) from e
 
-        # Deserialize initial_state for response (check type first)
-        if isinstance(test_case.initial_state, str):
-            test_case.initial_state = test_case.get_initial_state()
-
         logger.info(f"Created test case: {test_case.case_id} for agent {agent_id}")
         return test_case
 
@@ -471,10 +624,6 @@ class AgentTestCaseRepository:
             .filter(AgentTestCase.case_id == case_id) \
             .first()
 
-        if test_case:
-            if isinstance(test_case.initial_state, str):
-                test_case.initial_state = test_case.get_initial_state()
-
         return test_case
 
     def list_by_agent(self, agent_id: str) -> List[AgentTestCase]:
@@ -490,10 +639,6 @@ class AgentTestCaseRepository:
         test_cases = self.session.query(AgentTestCase) \
             .filter(AgentTestCase.agent_id == agent_id) \
             .all()
-
-        for test_case in test_cases:
-            if isinstance(test_case.initial_state, str):
-                test_case.initial_state = test_case.get_initial_state()
 
         return test_cases
 
@@ -514,11 +659,6 @@ class AgentTestCaseRepository:
             AgentTestCase.node_id == node_id
         )) \
             .all()
-
-        # Deserialize initial_state for all test cases
-        for test_case in test_cases:
-            if isinstance(test_case.initial_state, str):
-                test_case.initial_state = test_case.get_initial_state()
 
         return test_cases
 
@@ -549,10 +689,6 @@ class AgentTestCaseRepository:
         self.session.commit()
         self.session.refresh(test_case)
 
-        # Deserialize initial_state for response (check type first)
-        if isinstance(test_case.initial_state, str):
-            test_case.initial_state = test_case.get_initial_state()
-
         logger.info(f"Updated test case: {case_id}")
         return test_case
 
@@ -579,13 +715,241 @@ class AgentTestCaseRepository:
     def count_by_agent(self, agent_id: str) -> int:
         """
         Count test cases for an agent.
-        
+
         Args:
             agent_id: UUID of the agent
-            
+
         Returns:
             Number of test cases
         """
         return self.session.query(AgentTestCase) \
             .filter(AgentTestCase.agent_id == agent_id) \
+            .count()
+
+
+class AgentDraftRepository:
+    """
+    Data access layer for AgentDraft entities (v5.0).
+
+    Manages draft/branch versions of agents for development and testing.
+    """
+
+    def __init__(self, session: Session):
+        """
+        Initialize the repository with a database session.
+
+        Args:
+            session: SQLAlchemy Session instance
+        """
+        self.session = session
+
+    def create(self, agent_id: str, name: str, file_path: str,
+               base_version: int, draft_id: Optional[str] = None) -> AgentDraft:
+        """
+        Create a new draft for an agent.
+
+        Args:
+            agent_id: UUID of the parent agent
+            name: Draft/branch name
+            file_path: Relative path to draft JSON file
+            base_version: Version this draft is based on
+            draft_id: Optional pre-generated draft ID
+
+        Returns:
+            Created AgentDraft instance
+
+        Raises:
+            ValueError: If agent doesn't exist
+        """
+        # Verify agent exists and is not pending deletion
+        agent = self.session.query(Agent).filter(Agent.id == agent_id).first()
+        if not agent:
+            raise ValueError(f"Agent {agent_id} not found")
+        if agent.deletion_status == 'PENDING':
+            raise ValueError(f"Agent {agent_id} is pending deletion")
+
+        # Generate ISO timestamp with milliseconds
+        updated_at = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
+        draft = AgentDraft(
+            agent_id=agent_id,
+            name=name,
+            file_path=file_path,
+            base_version=base_version,
+            updated_at=updated_at
+        )
+
+        if draft_id:
+            draft.draft_id = draft_id
+
+        self.session.add(draft)
+        self.session.commit()
+        self.session.refresh(draft)
+
+        logger.info(f"Created draft: {draft.draft_id} for agent {agent_id}")
+        return draft
+
+    def get_by_id(self, draft_id: str) -> Optional[AgentDraft]:
+        """
+        Retrieve draft by ID.
+
+        Args:
+            draft_id: UUID of the draft
+
+        Returns:
+            AgentDraft instance or None if not found
+        """
+        return self.session.query(AgentDraft) \
+            .filter(AgentDraft.draft_id == draft_id) \
+            .first()
+
+    def get_by_id_and_agent(self, draft_id: str, agent_id: str) -> Optional[AgentDraft]:
+        """
+        Retrieve draft by ID, verifying it belongs to the specified agent.
+
+        Args:
+            draft_id: UUID of the draft
+            agent_id: UUID of the agent
+
+        Returns:
+            AgentDraft instance or None if not found or wrong agent
+        """
+        return self.session.query(AgentDraft) \
+            .filter(and_(
+                AgentDraft.draft_id == draft_id,
+                AgentDraft.agent_id == agent_id
+            )) \
+            .first()
+
+    def list_by_agent(self, agent_id: str) -> List[AgentDraft]:
+        """
+        List all drafts for an agent.
+
+        Args:
+            agent_id: UUID of the agent
+
+        Returns:
+            List of AgentDraft instances ordered by updated_at DESC
+        """
+        return self.session.query(AgentDraft) \
+            .filter(AgentDraft.agent_id == agent_id) \
+            .order_by(desc(AgentDraft.updated_at)) \
+            .all()
+
+    def update(self, draft_id: str, name: Optional[str] = None,
+               touch_updated_at: bool = True) -> Optional[AgentDraft]:
+        """
+        Update draft metadata.
+
+        Args:
+            draft_id: UUID of the draft
+            name: New name (optional)
+            touch_updated_at: Whether to update the updated_at timestamp
+
+        Returns:
+            Updated AgentDraft instance or None if not found
+        """
+        draft = self.get_by_id(draft_id)
+        if not draft:
+            return None
+
+        if name is not None:
+            draft.name = name
+
+        if touch_updated_at:
+            draft.updated_at = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
+        self.session.commit()
+        self.session.refresh(draft)
+
+        logger.info(f"Updated draft: {draft_id}")
+        return draft
+
+    def update_with_lock_check(self, draft_id: str, agent_id: str,
+                               expected_updated_at: Optional[str] = None,
+                               name: Optional[str] = None) -> Optional[AgentDraft]:
+        """
+        Update draft with optional optimistic locking.
+
+        Args:
+            draft_id: UUID of the draft
+            agent_id: UUID of the agent (for verification)
+            expected_updated_at: Expected timestamp for optimistic locking
+            name: New name (optional)
+
+        Returns:
+            Updated AgentDraft instance
+
+        Raises:
+            ValueError: If optimistic lock fails (concurrent modification)
+        """
+        draft = self.get_by_id_and_agent(draft_id, agent_id)
+        if not draft:
+            return None
+
+        # Optimistic locking check
+        if expected_updated_at and draft.updated_at != expected_updated_at:
+            raise ValueError("Conflict: draft was modified by another process")
+
+        if name is not None:
+            draft.name = name
+
+        draft.updated_at = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
+        self.session.commit()
+        self.session.refresh(draft)
+
+        return draft
+
+    def delete(self, draft_id: str) -> bool:
+        """
+        Delete a draft.
+
+        Args:
+            draft_id: UUID of the draft
+
+        Returns:
+            True if deleted, False if not found
+        """
+        draft = self.get_by_id(draft_id)
+        if not draft:
+            return False
+
+        self.session.delete(draft)
+        self.session.commit()
+
+        logger.info(f"Deleted draft: {draft_id}")
+        return True
+
+    def delete_by_agent(self, agent_id: str) -> int:
+        """
+        Delete all drafts for an agent.
+
+        Args:
+            agent_id: UUID of the agent
+
+        Returns:
+            Number of drafts deleted
+        """
+        count = self.session.query(AgentDraft) \
+            .filter(AgentDraft.agent_id == agent_id) \
+            .delete()
+
+        self.session.commit()
+
+        logger.info(f"Deleted {count} drafts for agent {agent_id}")
+        return count
+
+    def count_by_agent(self, agent_id: str) -> int:
+        """
+        Count drafts for an agent.
+
+        Args:
+            agent_id: UUID of the agent
+
+        Returns:
+            Number of drafts
+        """
+        return self.session.query(AgentDraft) \
+            .filter(AgentDraft.agent_id == agent_id) \
             .count()

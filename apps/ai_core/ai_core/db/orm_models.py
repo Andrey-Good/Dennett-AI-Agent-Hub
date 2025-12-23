@@ -3,7 +3,8 @@
 SQLAlchemy ORM models for AI Core database schema.
 
 This module defines all database tables using SQLAlchemy ORM:
-- agents: Stores information about AI agents
+- agents: Stores information about AI agents (v5.0 with versioning, soft delete)
+- agent_drafts: Draft/branch management for agents
 - agent_runs: Tracks execution history of agents
 - agent_test_cases: Stores test cases for agents
 """
@@ -12,59 +13,93 @@ from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import (
     Column, String, Text, DateTime, ForeignKey, Integer, JSON,
-    create_engine, Index, UniqueConstraint, ForeignKeyConstraint
+    create_engine, Index, UniqueConstraint, ForeignKeyConstraint, CheckConstraint
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-import uuid
 import json
+
+try:
+    import uuid6
+    def uuid7str() -> str:
+        return str(uuid6.uuid7())
+except ImportError:
+    # Fallback to uuid4 if uuid6 not available
+    import uuid
+    def uuid7str() -> str:
+        return str(uuid.uuid4())
 
 Base = declarative_base()
 
 
 class Agent(Base):
     """
-    Represents an AI agent with metadata and configuration.
-    
+    Represents an AI agent with metadata and configuration (v5.0).
+
     Attributes:
-        id: Unique UUID identifier for the agent
+        id: Unique UUIDv7 identifier for the agent
         name: Display name of the agent
         description: Detailed description of the agent's purpose
         tags: JSON-serialized list of tags for categorization
+        version: Current active version number (1, 2, 3...)
+        is_active: Whether agent triggers are loaded (0=inactive, 1=active)
+        deletion_status: Soft delete status ('NONE' or 'PENDING')
+        file_path: Relative path to current live JSON file
         created_at: Timestamp when the agent was created
-        modified_at: Timestamp of last modification
+        modified_at: Timestamp of last modification (updated_at in spec)
         runs: Relationship to associated agent runs
         test_cases: Relationship to associated test cases
+        drafts: Relationship to associated drafts
     """
     __tablename__ = 'agents'
-    
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+
+    id = Column(String(36), primary_key=True, default=uuid7str)
     name = Column(String(255), nullable=False, index=True)
     description = Column(Text, nullable=True)
     tags = Column(Text, nullable=True)  # JSON-serialized list
+
+    # v5.0 versioning fields
+    version = Column(Integer, nullable=False, default=1)
+    is_active = Column(Integer, nullable=False, default=0)  # 0 or 1
+    deletion_status = Column(String(20), nullable=False, default='NONE')  # NONE, PENDING
+    file_path = Column(Text, nullable=True)  # Relative path from DATA_ROOT
+
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
-    modified_at = Column(DateTime, nullable=False, default=datetime.utcnow, 
+    modified_at = Column(DateTime, nullable=False, default=datetime.utcnow,
                         onupdate=datetime.utcnow, index=True)
-    
+
     # Relationships
     runs = relationship('AgentRun', back_populates='agent', cascade='all, delete-orphan')
     test_cases = relationship('AgentTestCase', back_populates='agent', cascade='all, delete-orphan')
-    
+    drafts = relationship('AgentDraft', back_populates='agent', cascade='all, delete-orphan')
+
     __table_args__ = (
         Index('idx_agent_created', 'created_at'),
         Index('idx_agent_modified', 'modified_at'),
+        Index('idx_agent_deletion_status', 'deletion_status'),
+        CheckConstraint("deletion_status IN ('NONE', 'PENDING')", name='ck_agent_deletion_status'),
+        CheckConstraint('version >= 1', name='ck_agent_version'),
+        CheckConstraint('is_active IN (0, 1)', name='ck_agent_is_active'),
     )
-    
+
     def set_tags(self, tags: List[str]) -> None:
         """Set tags as JSON-serialized string."""
         self.tags = json.dumps(tags) if tags else None
-    
+
     def get_tags(self) -> List[str]:
         """Get tags from JSON-serialized string."""
         return json.loads(self.tags) if self.tags else []
-    
+
+    def is_pending_deletion(self) -> bool:
+        """Check if agent is marked for deletion."""
+        return self.deletion_status == 'PENDING'
+
+    def is_agent_active(self) -> bool:
+        """Check if agent triggers are loaded."""
+        return self.is_active == 1
+
     def __repr__(self) -> str:
-        return f"<Agent(id='{self.id}', name='{self.name}')>"
+        return f"<Agent(id='{self.id}', name='{self.name}', v{self.version})>"
 
 
 class AgentRun(Base):
@@ -83,7 +118,7 @@ class AgentRun(Base):
     """
     __tablename__ = 'agent_runs'
     
-    run_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    run_id = Column(String(36), primary_key=True, default=uuid7str)
     agent_id = Column(String(36), ForeignKey('agents.id', ondelete='CASCADE'), 
                       nullable=False, index=True)
     status = Column(String(50), nullable=False, index=True)  # pending, running, completed, failed, stopped_by_user
@@ -139,7 +174,7 @@ class AgentTestCase(Base):
     """
     __tablename__ = 'agent_test_cases'
     
-    case_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    case_id = Column(String(36), primary_key=True, default=uuid7str)
     agent_id = Column(String(36), ForeignKey('agents.id', ondelete='CASCADE'), 
                       nullable=False, index=True)
     node_id = Column(String(255), nullable=False)
@@ -165,6 +200,64 @@ class AgentTestCase(Base):
     
     def __repr__(self) -> str:
         return f"<AgentTestCase(case_id='{self.case_id}', agent_id='{self.agent_id}', name='{self.name}')>"
+
+
+class AgentDraft(Base):
+    """
+    Represents a draft/branch of an agent for development.
+
+    Drafts allow editing agent configurations without affecting the live version.
+    Multiple drafts can exist per agent, each based on a specific version.
+
+    Attributes:
+        draft_id: Unique UUIDv7 identifier for the draft
+        agent_id: Foreign key reference to the agent
+        name: Branch/draft name (e.g., "Experiment with RAG", "Autosave")
+        file_path: Relative path to draft JSON file
+        base_version: Version of agent this draft is based on
+        updated_at: Timestamp of last autosave (ISO UTC with ms)
+        his_execution_id: JSON list of execution IDs related to this draft
+        agent: Relationship to the Agent
+    """
+    __tablename__ = 'agent_drafts'
+
+    draft_id = Column(String(36), primary_key=True, default=uuid7str)
+    agent_id = Column(String(36), ForeignKey('agents.id', ondelete='CASCADE'),
+                      nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    file_path = Column(Text, nullable=False)  # Relative path from DATA_ROOT
+    base_version = Column(Integer, nullable=False)  # Version this draft is based on
+    updated_at = Column(Text, nullable=False)  # ISO UTC with milliseconds
+    his_execution_id = Column(Text, nullable=True)  # JSON list of execution IDs
+
+    # Relationship
+    agent = relationship('Agent', back_populates='drafts')
+
+    __table_args__ = (
+        Index('idx_draft_agent_updated', 'agent_id', 'updated_at'),
+        CheckConstraint('base_version >= 1', name='ck_draft_base_version'),
+    )
+
+    def get_execution_ids(self) -> List[str]:
+        """Get execution IDs from JSON-serialized string."""
+        if self.his_execution_id:
+            return json.loads(self.his_execution_id)
+        return []
+
+    def set_execution_ids(self, ids: List[str]) -> None:
+        """Set execution IDs as JSON-serialized string."""
+        self.his_execution_id = json.dumps(ids) if ids else None
+
+    def add_execution_id(self, execution_id: str) -> None:
+        """Add an execution ID to the list."""
+        ids = self.get_execution_ids()
+        if execution_id not in ids:
+            ids.append(execution_id)
+            self.set_execution_ids(ids)
+
+    def __repr__(self) -> str:
+        return f"<AgentDraft(draft_id='{self.draft_id}', agent_id='{self.agent_id}', name='{self.name}')>"
+
 
 class Execution(Base):
     """Task execution queue."""

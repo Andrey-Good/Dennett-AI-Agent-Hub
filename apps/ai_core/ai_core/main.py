@@ -16,6 +16,8 @@ from apps.ai_core.ai_core.api.agents_api import router as agents_router
 
 from apps.ai_core.ai_core.logic.priority_policy import init_priority_policy, get_priority_policy
 from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
+from apps.ai_core.ai_core.workers.garbage_collector import init_garbage_collector
+from apps.ai_core.ai_core.db.migrator import run_incremental_migrations
 
 from contextlib import asynccontextmanager
 
@@ -48,6 +50,11 @@ async def lifespan(app: FastAPI):
         )
         initialize_database(db_config)
         logger.info(f"Database initialized successfully at: {db_url}")
+
+        # Run incremental migrations for v5.0 schema updates
+        logger.info("Running incremental migrations...")
+        run_incremental_migrations(get_database_manager().get_engine())
+        logger.info("Incremental migrations completed")
 
         logger.info("Reading asset storage path from database settings...")
         from apps.ai_core.ai_core.logic.settings_service import SettingsService
@@ -113,6 +120,23 @@ async def lifespan(app: FastAPI):
         logger.error(f"PriorityPolicy initialization failed: {e}")
         raise
 
+    # Start AgentGarbageCollector
+    gc_task = None
+    try:
+        logger.info("Starting AgentGarbageCollector...")
+        garbage_collector = init_garbage_collector(interval_seconds=300)
+        db_manager = get_database_manager()
+        agents_dir = str(file_system_manager.get_agents_dir())
+
+        gc_task = asyncio.create_task(
+            garbage_collector.run(db_manager.create_session, agents_dir)
+        )
+        logger.info("AgentGarbageCollector started")
+
+    except Exception as e:
+        logger.error(f"AgentGarbageCollector initialization failed: {e}")
+        # Non-fatal - continue without GC
+
     yield
 
     # Shutdown
@@ -126,6 +150,15 @@ async def lifespan(app: FastAPI):
             logger.info("AgingWorker stopped")
         except Exception as e:
             logger.error(f"Error stopping AgingWorker: {e}")
+
+    if gc_task is not None:
+        gc_task.cancel()
+        try:
+            await gc_task
+        except asyncio.CancelledError:
+            logger.info("AgentGarbageCollector stopped")
+        except Exception as e:
+            logger.error(f"Error stopping AgentGarbageCollector: {e}")
 
     # Close HuggingFace service
     await service.__aexit__(None, None, None)

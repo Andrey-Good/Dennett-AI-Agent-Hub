@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker, Session
 
 from apps.ai_core.ai_core.db.orm_models import Base, Agent, AgentRun, AgentTestCase
 from apps.ai_core.ai_core.db.repositories import (
-    AgentRepository, AgentRunRepository, AgentTestCaseRepository
+    AgentRepository, AgentRunRepository, AgentTestCaseRepository, AgentDraftRepository
 )
 
 
@@ -54,17 +54,19 @@ class TestAgentRepository:
     def test_create_agent(self, db_session: Session):
         """Test creating a new agent."""
         repo = AgentRepository(db_session)
-        
+
         agent = repo.create(
             name="Test Agent",
             description="A test agent",
             tags=["test", "sample"]
         )
-        
+
         assert agent.id is not None
         assert agent.name == "Test Agent"
         assert agent.description == "A test agent"
-        assert agent.get_tags() == ["test", "sample"]
+        # Tags are stored as JSON string, use get_tags() to deserialize
+        tags = agent.get_tags()
+        assert tags == ["test", "sample"]
         assert agent.created_at is not None
         assert agent.modified_at is not None
     
@@ -136,18 +138,20 @@ class TestAgentRepository:
     def test_update_agent(self, db_session: Session):
         """Test updating agent properties."""
         repo = AgentRepository(db_session)
-        
+
         agent = repo.create(name="Original Name", tags=["old"])
-        
+
         updated = repo.update(
             agent.id,
             name="Updated Name",
             tags=["new", "updated"]
         )
-        
+
         assert updated is not None
         assert updated.name == "Updated Name"
-        assert updated.get_tags() == ["new", "updated"]
+        # Tags are stored as JSON string, use get_tags() to deserialize
+        tags = updated.get_tags()
+        assert tags == ["new", "updated"]
     
     def test_update_agent_not_found(self, db_session: Session):
         """Test updating non-existent agent returns None."""
@@ -310,21 +314,23 @@ class TestAgentTestCaseRepository:
         """Test creating a new test case."""
         agent_repo = AgentRepository(db_session)
         test_repo = AgentTestCaseRepository(db_session)
-        
+
         agent = agent_repo.create(name="Test Agent")
-        
+
         test_case = test_repo.create(
             agent_id=agent.id,
             node_id="node_001",
             name="Test Case 1",
             initial_state={"input": "test", "expected": "output"}
         )
-        
+
         assert test_case.case_id is not None
         assert test_case.agent_id == agent.id
         assert test_case.node_id == "node_001"
         assert test_case.name == "Test Case 1"
-        assert test_case.get_initial_state() == {"input": "test", "expected": "output"}
+        # initial_state is stored as JSON string, use get_initial_state()
+        state = test_case.get_initial_state()
+        assert state == {"input": "test", "expected": "output"}
     
     def test_list_test_cases_by_agent(self, db_session: Session):
         """Test listing test cases for an agent."""
@@ -369,6 +375,472 @@ class TestAgentTestCaseRepository:
         
         assert deleted is True
         assert test_repo.get_by_id(test_case.case_id) is None
+
+
+# ============================================================================
+# Agent Repository v5.0 Tests (Soft Delete, Versioning)
+# ============================================================================
+
+class TestAgentRepositoryV5:
+    """Test suite for v5.0 Agent features: soft delete, versioning."""
+
+    def test_create_agent_with_v5_fields(self, db_session: Session):
+        """Test creating agent with v5.0 fields."""
+        repo = AgentRepository(db_session)
+
+        agent = repo.create(
+            name="V5 Agent",
+            description="Agent with versioning",
+            version=1,
+            is_active=0,
+            deletion_status='NONE',
+            file_path="agent-123/v1.json"
+        )
+
+        assert agent.version == 1
+        assert agent.is_active == 0
+        assert agent.deletion_status == 'NONE'
+        assert agent.file_path == "agent-123/v1.json"
+
+    def test_mark_for_deletion(self, db_session: Session):
+        """Test soft delete (mark for deletion)."""
+        repo = AgentRepository(db_session)
+        agent = repo.create(name="To Delete", is_active=1)
+
+        result = repo.mark_for_deletion(agent.id)
+
+        assert result is not None
+        assert result.deletion_status == 'PENDING'
+        assert result.is_active == 0
+
+    def test_mark_for_deletion_nonexistent_agent(self, db_session: Session):
+        """Test marking non-existent agent for deletion returns None."""
+        repo = AgentRepository(db_session)
+
+        result = repo.mark_for_deletion("nonexistent-id")
+
+        assert result is None
+
+    def test_list_all_excludes_pending_deletion(self, db_session: Session):
+        """Test that list_all excludes agents pending deletion by default."""
+        repo = AgentRepository(db_session)
+
+        agent1 = repo.create(name="Active Agent")
+        agent2 = repo.create(name="Deleted Agent")
+        repo.mark_for_deletion(agent2.id)
+
+        agents = repo.list_all()
+
+        assert len(agents) == 1
+        assert agents[0].id == agent1.id
+
+    def test_list_all_includes_pending_deletion(self, db_session: Session):
+        """Test that list_all can include pending deletion agents."""
+        repo = AgentRepository(db_session)
+
+        agent1 = repo.create(name="Active Agent")
+        agent2 = repo.create(name="Deleted Agent")
+        repo.mark_for_deletion(agent2.id)
+
+        agents = repo.list_all(include_pending_deletion=True)
+
+        assert len(agents) == 2
+
+    def test_activate_agent(self, db_session: Session):
+        """Test activating an agent."""
+        repo = AgentRepository(db_session)
+        agent = repo.create(name="Inactive Agent", is_active=0)
+
+        result = repo.activate(agent.id)
+
+        assert result is not None
+        assert result.is_active == 1
+
+    def test_activate_pending_deletion_fails(self, db_session: Session):
+        """Test that activating pending deletion agent fails."""
+        repo = AgentRepository(db_session)
+        agent = repo.create(name="Deleted Agent")
+        repo.mark_for_deletion(agent.id)
+
+        result = repo.activate(agent.id)
+
+        assert result is None
+
+    def test_deactivate_agent(self, db_session: Session):
+        """Test deactivating an agent."""
+        repo = AgentRepository(db_session)
+        agent = repo.create(name="Active Agent", is_active=1)
+
+        result = repo.deactivate(agent.id)
+
+        assert result is not None
+        assert result.is_active == 0
+
+    def test_update_version(self, db_session: Session):
+        """Test updating agent version and file path."""
+        repo = AgentRepository(db_session)
+        agent = repo.create(
+            name="Versioned Agent",
+            version=1,
+            file_path="agent-1/v1.json"
+        )
+
+        result = repo.update_version(agent.id, 2, "agent-1/v2.json")
+
+        assert result is not None
+        assert result.version == 2
+        assert result.file_path == "agent-1/v2.json"
+
+    def test_list_pending_deletion(self, db_session: Session):
+        """Test listing agents pending deletion."""
+        repo = AgentRepository(db_session)
+
+        agent1 = repo.create(name="Active 1")
+        agent2 = repo.create(name="Pending 1")
+        agent3 = repo.create(name="Active 2")
+        agent4 = repo.create(name="Pending 2")
+
+        repo.mark_for_deletion(agent2.id)
+        repo.mark_for_deletion(agent4.id)
+
+        pending = repo.list_pending_deletion()
+
+        assert len(pending) == 2
+        pending_ids = [a.id for a in pending]
+        assert agent2.id in pending_ids
+        assert agent4.id in pending_ids
+
+    def test_hard_delete(self, db_session: Session):
+        """Test permanent deletion of agent."""
+        repo = AgentRepository(db_session)
+        agent = repo.create(name="To Hard Delete")
+
+        result = repo.hard_delete(agent.id)
+
+        assert result is True
+        assert repo.get_by_id(agent.id) is None
+
+    def test_hard_delete_nonexistent(self, db_session: Session):
+        """Test hard delete of non-existent agent returns False."""
+        repo = AgentRepository(db_session)
+
+        result = repo.hard_delete("nonexistent-id")
+
+        assert result is False
+
+    def test_count_excludes_pending_deletion(self, db_session: Session):
+        """Test count excludes pending deletion by default."""
+        repo = AgentRepository(db_session)
+
+        repo.create(name="Agent 1")
+        agent2 = repo.create(name="Agent 2")
+        repo.create(name="Agent 3")
+        repo.mark_for_deletion(agent2.id)
+
+        count = repo.count_all()
+
+        assert count == 2
+
+
+# ============================================================================
+# Agent Draft Repository Tests
+# ============================================================================
+
+class TestAgentDraftRepository:
+    """Test suite for AgentDraftRepository."""
+
+    def test_create_draft(self, db_session: Session):
+        """Test creating a new draft."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent = agent_repo.create(name="Test Agent", version=1)
+
+        draft = draft_repo.create(
+            agent_id=agent.id,
+            name="Experiment Draft",
+            file_path=f"{agent.id}/drafts/draft-1.json",
+            base_version=1
+        )
+
+        assert draft.draft_id is not None
+        assert draft.agent_id == agent.id
+        assert draft.name == "Experiment Draft"
+        assert draft.base_version == 1
+        assert draft.updated_at is not None
+
+    def test_create_draft_with_custom_id(self, db_session: Session):
+        """Test creating a draft with pre-generated ID."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent = agent_repo.create(name="Test Agent")
+        custom_id = "custom-draft-id-123"
+
+        draft = draft_repo.create(
+            agent_id=agent.id,
+            name="Custom ID Draft",
+            file_path=f"{agent.id}/drafts/{custom_id}.json",
+            base_version=1,
+            draft_id=custom_id
+        )
+
+        assert draft.draft_id == custom_id
+
+    def test_create_draft_for_nonexistent_agent_fails(self, db_session: Session):
+        """Test creating draft for non-existent agent raises ValueError."""
+        draft_repo = AgentDraftRepository(db_session)
+
+        with pytest.raises(ValueError) as exc_info:
+            draft_repo.create(
+                agent_id="nonexistent-agent",
+                name="Draft",
+                file_path="path.json",
+                base_version=1
+            )
+
+        assert "not found" in str(exc_info.value)
+
+    def test_create_draft_for_pending_deletion_fails(self, db_session: Session):
+        """Test creating draft for pending deletion agent fails."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent = agent_repo.create(name="Deleted Agent")
+        agent_repo.mark_for_deletion(agent.id)
+
+        with pytest.raises(ValueError) as exc_info:
+            draft_repo.create(
+                agent_id=agent.id,
+                name="Draft",
+                file_path="path.json",
+                base_version=1
+            )
+
+        assert "pending deletion" in str(exc_info.value)
+
+    def test_get_draft_by_id(self, db_session: Session):
+        """Test retrieving draft by ID."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent = agent_repo.create(name="Test Agent")
+        created = draft_repo.create(
+            agent_id=agent.id,
+            name="Draft",
+            file_path="path.json",
+            base_version=1
+        )
+
+        retrieved = draft_repo.get_by_id(created.draft_id)
+
+        assert retrieved is not None
+        assert retrieved.draft_id == created.draft_id
+        assert retrieved.name == "Draft"
+
+    def test_get_draft_by_id_and_agent(self, db_session: Session):
+        """Test retrieving draft by ID with agent verification."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent1 = agent_repo.create(name="Agent 1")
+        agent2 = agent_repo.create(name="Agent 2")
+
+        draft = draft_repo.create(
+            agent_id=agent1.id,
+            name="Draft",
+            file_path="path.json",
+            base_version=1
+        )
+
+        # Should find draft with correct agent
+        result1 = draft_repo.get_by_id_and_agent(draft.draft_id, agent1.id)
+        assert result1 is not None
+
+        # Should not find draft with wrong agent
+        result2 = draft_repo.get_by_id_and_agent(draft.draft_id, agent2.id)
+        assert result2 is None
+
+    def test_list_drafts_by_agent(self, db_session: Session):
+        """Test listing all drafts for an agent."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent = agent_repo.create(name="Test Agent")
+
+        draft1 = draft_repo.create(
+            agent_id=agent.id,
+            name="Draft 1",
+            file_path="d1.json",
+            base_version=1
+        )
+        draft2 = draft_repo.create(
+            agent_id=agent.id,
+            name="Draft 2",
+            file_path="d2.json",
+            base_version=1
+        )
+
+        drafts = draft_repo.list_by_agent(agent.id)
+
+        assert len(drafts) == 2
+        draft_ids = [d.draft_id for d in drafts]
+        assert draft1.draft_id in draft_ids
+        assert draft2.draft_id in draft_ids
+
+    def test_list_drafts_ordered_by_updated_at(self, db_session: Session):
+        """Test that drafts are ordered by updated_at DESC."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent = agent_repo.create(name="Test Agent")
+
+        # Create drafts in order
+        draft1 = draft_repo.create(
+            agent_id=agent.id,
+            name="First",
+            file_path="d1.json",
+            base_version=1
+        )
+        draft2 = draft_repo.create(
+            agent_id=agent.id,
+            name="Second",
+            file_path="d2.json",
+            base_version=1
+        )
+
+        # Update first draft to make it newer
+        draft_repo.update(draft1.draft_id, touch_updated_at=True)
+
+        drafts = draft_repo.list_by_agent(agent.id)
+
+        # First draft should now be first (most recent)
+        assert drafts[0].draft_id == draft1.draft_id
+
+    def test_update_draft_name(self, db_session: Session):
+        """Test updating draft name."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent = agent_repo.create(name="Test Agent")
+        draft = draft_repo.create(
+            agent_id=agent.id,
+            name="Original Name",
+            file_path="path.json",
+            base_version=1
+        )
+
+        updated = draft_repo.update(draft.draft_id, name="New Name")
+
+        assert updated is not None
+        assert updated.name == "New Name"
+
+    def test_update_with_lock_check_success(self, db_session: Session):
+        """Test update with optimistic locking - success case."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent = agent_repo.create(name="Test Agent")
+        draft = draft_repo.create(
+            agent_id=agent.id,
+            name="Draft",
+            file_path="path.json",
+            base_version=1
+        )
+        original_updated_at = draft.updated_at
+
+        updated = draft_repo.update_with_lock_check(
+            draft_id=draft.draft_id,
+            agent_id=agent.id,
+            expected_updated_at=original_updated_at,
+            name="Updated Name"
+        )
+
+        assert updated is not None
+        assert updated.name == "Updated Name"
+        assert updated.updated_at != original_updated_at
+
+    def test_update_with_lock_check_conflict(self, db_session: Session):
+        """Test update with optimistic locking - conflict case."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent = agent_repo.create(name="Test Agent")
+        draft = draft_repo.create(
+            agent_id=agent.id,
+            name="Draft",
+            file_path="path.json",
+            base_version=1
+        )
+
+        # Simulate concurrent modification
+        draft_repo.update(draft.draft_id, touch_updated_at=True)
+
+        # Try to update with old timestamp
+        with pytest.raises(ValueError) as exc_info:
+            draft_repo.update_with_lock_check(
+                draft_id=draft.draft_id,
+                agent_id=agent.id,
+                expected_updated_at="old-timestamp",
+                name="Should Fail"
+            )
+
+        assert "Conflict" in str(exc_info.value)
+
+    def test_delete_draft(self, db_session: Session):
+        """Test deleting a draft."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent = agent_repo.create(name="Test Agent")
+        draft = draft_repo.create(
+            agent_id=agent.id,
+            name="To Delete",
+            file_path="path.json",
+            base_version=1
+        )
+
+        result = draft_repo.delete(draft.draft_id)
+
+        assert result is True
+        assert draft_repo.get_by_id(draft.draft_id) is None
+
+    def test_delete_draft_not_found(self, db_session: Session):
+        """Test deleting non-existent draft returns False."""
+        draft_repo = AgentDraftRepository(db_session)
+
+        result = draft_repo.delete("nonexistent-draft")
+
+        assert result is False
+
+    def test_delete_all_drafts_by_agent(self, db_session: Session):
+        """Test deleting all drafts for an agent."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent = agent_repo.create(name="Test Agent")
+        draft_repo.create(agent_id=agent.id, name="D1", file_path="1.json", base_version=1)
+        draft_repo.create(agent_id=agent.id, name="D2", file_path="2.json", base_version=1)
+        draft_repo.create(agent_id=agent.id, name="D3", file_path="3.json", base_version=1)
+
+        count = draft_repo.delete_by_agent(agent.id)
+
+        assert count == 3
+        assert len(draft_repo.list_by_agent(agent.id)) == 0
+
+    def test_count_drafts_by_agent(self, db_session: Session):
+        """Test counting drafts for an agent."""
+        agent_repo = AgentRepository(db_session)
+        draft_repo = AgentDraftRepository(db_session)
+
+        agent = agent_repo.create(name="Test Agent")
+
+        assert draft_repo.count_by_agent(agent.id) == 0
+
+        draft_repo.create(agent_id=agent.id, name="D1", file_path="1.json", base_version=1)
+        draft_repo.create(agent_id=agent.id, name="D2", file_path="2.json", base_version=1)
+
+        assert draft_repo.count_by_agent(agent.id) == 2
 
 
 if __name__ == "__main__":

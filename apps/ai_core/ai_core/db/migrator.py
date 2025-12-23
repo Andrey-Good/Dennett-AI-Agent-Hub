@@ -376,9 +376,34 @@ class DatabaseMigrator:
 def run_migration(engine: Engine) -> None:
     """
     Convenience function to run database migration.
-    
+
     Args:
         engine: SQLAlchemy Engine instance
     """
     migrator = DatabaseMigrator(engine)
     migrator.migrate()
+
+
+def run_incremental_migrations(engine: Engine) -> None:
+    """
+    Run incremental migrations for existing databases.
+
+    This function runs migrations that add new columns or tables
+    to already-initialized databases.
+
+    Args:
+        engine: SQLAlchemy Engine instance
+    """
+    logger.info("Running incremental migrations...")
+
+    try:
+        # Import and run agent versioning migration
+        from apps.ai_core.ai_core.db.migrations.add_agent_versioning import (
+            migrate_add_agent_versioning
+        )
+        migrate_add_agent_versioning()
+        logger.info("Incremental migrations completed")
+
+    except Exception as e:
+        logger.error(f"Incremental migration failed: {e}")
+        raise

@@ -1,37 +1,64 @@
 # apps/ai_core/ai_core/api/agents_api.py
 """
-FastAPI endpoints for agent management with database persistence.
+FastAPI endpoints for agent management with database persistence (v5.0).
 
 This module provides REST API endpoints for CRUD operations on agents,
-agent runs, and test cases using the database repositories.
+agent runs, drafts, and test cases using the database repositories.
 
 Routes:
     GET  /agents              - List all agents
     POST /agents              - Create a new agent
     GET  /agents/{agent_id}   - Get agent details
     PUT  /agents/{agent_id}   - Update agent
-    DELETE /agents/{agent_id} - Delete agent
-    
+    DELETE /agents/{agent_id} - Soft delete agent
+
+    POST /agents/{agent_id}/activate   - Activate agent triggers
+    POST /agents/{agent_id}/deactivate - Deactivate agent triggers
+
+    GET  /agents/{agent_id}/versions   - List live + all drafts
+
+    POST   /agents/{agent_id}/drafts              - Create draft
+    GET    /agents/{agent_id}/drafts/{draft_id}   - Get draft content
+    PUT    /agents/{agent_id}/drafts/{draft_id}   - Update draft (autosave)
+    DELETE /agents/{agent_id}/drafts/{draft_id}   - Delete draft
+    POST   /agents/{agent_id}/drafts/{draft_id}/deploy - Deploy draft
+
     GET  /agents/{agent_id}/runs      - List agent runs
     POST /agents/{agent_id}/runs      - Create agent run
     GET  /agents/{agent_id}/runs/{run_id} - Get run details
-    
+
     GET  /agents/{agent_id}/test-cases      - List test cases
     POST /agents/{agent_id}/test-cases      - Create test case
     DELETE /agents/{agent_id}/test-cases/{case_id} - Delete test case
 """
 
+import os
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
 
 from apps.ai_core.ai_core.db.session import get_session
 from apps.ai_core.ai_core.db.repositories import (
-    AgentRepository, AgentRunRepository, AgentTestCaseRepository
+    AgentRepository, AgentRunRepository, AgentTestCaseRepository, AgentDraftRepository
 )
-from apps.ai_core.ai_core.db.orm_models import Agent, AgentRun, AgentTestCase
+from apps.ai_core.ai_core.db.orm_models import Agent, AgentRun, AgentTestCase, AgentDraft
+from apps.ai_core.ai_core.logic.atomic_write import atomic_write_json, read_json_file
+from apps.ai_core.ai_core.logic.trigger_manager import get_trigger_manager
+from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
+
+try:
+    import uuid6
+    def uuid7str() -> str:
+        return str(uuid6.uuid7())
+except ImportError:
+    import uuid
+    def uuid7str() -> str:
+        return str(uuid.uuid4())
+
+logger = logging.getLogger(__name__)
 
 # ============================================================================
 # Pydantic Models for Request/Response
@@ -69,16 +96,30 @@ class AgentUpdate(BaseModel):
 
 
 class AgentResponse(BaseModel):
-    """Response model for agent data."""
+    """Response model for agent data (v5.0)."""
     id: str = Field(..., description="Agent UUID")
     name: str = Field(..., description="Agent name")
     description: Optional[str] = Field(None, description="Agent description")
     tags: List[str] = Field(default_factory=list, description="Agent tags")
-    created_at: datetime = Field(..., description="Creation timestamp")
-    modified_at: datetime = Field(..., description="Last modification timestamp")
-    
+    version: int = Field(..., description="Current version number")
+    is_active: bool = Field(..., description="Whether triggers are loaded")
+    updated_at: datetime = Field(..., description="Last modification timestamp")
+
     class Config:
         from_attributes = True
+
+    @classmethod
+    def from_orm_agent(cls, agent: Agent) -> "AgentResponse":
+        """Create response from ORM model."""
+        return cls(
+            id=agent.id,
+            name=agent.name,
+            description=agent.description,
+            tags=agent.get_tags() if isinstance(agent.tags, str) else (agent.tags or []),
+            version=agent.version,
+            is_active=agent.is_active == 1,
+            updated_at=agent.modified_at
+        )
 
 
 class AgentRunCreate(BaseModel):
@@ -173,6 +214,112 @@ class AgentStatistics(BaseModel):
 
 
 # ============================================================================
+# v5.0 Draft/Version Models
+# ============================================================================
+
+class DraftCreate(BaseModel):
+    """Request model for creating a draft."""
+    name: str = Field(..., min_length=1, max_length=255, description="Draft name")
+    source: str = Field(..., description="Source: 'live' or draft UUID")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Experiment with RAG",
+                "source": "live"
+            }
+        }
+
+
+class DraftResponse(BaseModel):
+    """Response model for draft metadata."""
+    draft_id: str = Field(..., description="Draft UUID")
+    name: str = Field(..., description="Draft name")
+    base_version: int = Field(..., description="Base version number")
+    updated_at: str = Field(..., description="Last update timestamp")
+    type: str = Field(default="draft", description="Version type")
+
+
+class DraftContentResponse(BaseModel):
+    """Response model for draft content."""
+    updated_at: str = Field(..., description="Last update timestamp")
+    graph: Dict[str, Any] = Field(..., description="Full graph JSON")
+
+
+class DraftUpdate(BaseModel):
+    """Request model for updating a draft (autosave)."""
+    name: Optional[str] = Field(None, description="New name")
+    expected_updated_at: Optional[str] = Field(None, description="For optimistic locking")
+    graph: Dict[str, Any] = Field(..., description="Graph JSON to save")
+
+
+class VersionItem(BaseModel):
+    """A version item in the versions list."""
+    id: str = Field(..., description="ID (agent_id for live, draft_id for drafts)")
+    name: str = Field(..., description="Name")
+    version: Optional[int] = Field(None, description="Version number (live only)")
+    base_version: Optional[int] = Field(None, description="Base version (drafts only)")
+    updated_at: str = Field(..., description="Last update timestamp")
+    is_active: Optional[bool] = Field(None, description="Is active (live only)")
+    type: str = Field(..., description="'live' or 'draft'")
+
+
+class VersionsResponse(BaseModel):
+    """Response model for versions list."""
+    versions: List[VersionItem] = Field(..., description="List of versions")
+
+
+class DeployResponse(BaseModel):
+    """Response model for deploy operation."""
+    status: str = Field(..., description="Deploy status")
+    new_version: int = Field(..., description="New version number")
+
+
+class StatusResponse(BaseModel):
+    """Generic status response."""
+    status: str = Field(..., description="Operation status")
+
+
+class AgentCreatedResponse(BaseModel):
+    """Response for agent creation."""
+    agent_id: str = Field(..., description="Created agent UUID")
+    status: str = Field(default="created", description="Status")
+
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+def get_data_root() -> str:
+    """Get the DATA_ROOT path for agent files."""
+    return str(file_system_manager.get_agents_dir())
+
+
+def get_default_graph() -> Dict[str, Any]:
+    """Get default graph structure for new agents."""
+    return {
+        "nodes": [
+            {"id": "start", "type": "start", "data": {}},
+            {"id": "end", "type": "end", "data": {}}
+        ],
+        "edges": [
+            {"source": "start", "target": "end"}
+        ],
+        "triggers": [],
+        "permissions": {}
+    }
+
+
+def check_agent_not_pending(agent: Agent) -> None:
+    """Raise 409 if agent is pending deletion."""
+    if agent.deletion_status == 'PENDING':
+        raise HTTPException(
+            status_code=409,
+            detail="Agent is marked for deletion"
+        )
+
+
+# ============================================================================
 # Router Setup
 # ============================================================================
 
@@ -194,30 +341,55 @@ def list_agents(
     session: Session = Depends(get_session)
 ):
     """
-    List all agents with pagination.
-    
+    List all agents with pagination (v5.0).
+
+    Only returns agents with deletion_status='NONE'.
+
     Query Parameters:
         limit: Maximum number of results (default: 100)
         offset: Number of results to skip (default: 0)
     """
     repo = AgentRepository(session)
     agents = repo.list_all(limit=limit, offset=offset)
-    return agents
+    return [AgentResponse.from_orm_agent(a) for a in agents]
 
 
-@router.post("", response_model=AgentResponse, status_code=201)
+@router.post("", response_model=AgentCreatedResponse, status_code=201)
 def create_agent(
     agent: AgentCreate,
     session: Session = Depends(get_session)
 ):
-    """Create a new agent."""
+    """
+    Create a new agent (v5.0).
+
+    Creates agent record and writes default graph JSON to disk.
+    """
+    # Generate UUIDv7 for the agent
+    agent_id = uuid7str()
+
+    # Prepare file path (relative to DATA_ROOT)
+    relative_path = f"{agent_id}/v1.json"
+    absolute_path = os.path.join(get_data_root(), relative_path)
+
+    # Write default graph to disk
+    default_graph = get_default_graph()
+    atomic_write_json(absolute_path, default_graph)
+
+    # Create agent in database
     repo = AgentRepository(session)
     created = repo.create(
         name=agent.name,
         description=agent.description,
-        tags=agent.tags
+        tags=agent.tags,
+        agent_id=agent_id,
+        version=1,
+        is_active=0,
+        deletion_status='NONE',
+        file_path=relative_path
     )
-    return created
+
+    logger.info(f"Created agent {agent_id} with file {relative_path}")
+    return AgentCreatedResponse(agent_id=created.id, status="created")
 
 
 @router.get("/{agent_id}", response_model=AgentResponse)
@@ -228,11 +400,11 @@ def get_agent(
     """Get agent details by ID."""
     repo = AgentRepository(session)
     agent = repo.get_by_id(agent_id)
-    
+
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
-    
-    return agent
+
+    return AgentResponse.from_orm_agent(agent)
 
 
 @router.put("/{agent_id}", response_model=AgentResponse)
@@ -241,30 +413,447 @@ def update_agent(
     update: AgentUpdate,
     session: Session = Depends(get_session)
 ):
-    """Update agent properties."""
+    """Update agent properties (name, description, tags only)."""
     repo = AgentRepository(session)
-    
+    agent = repo.get_by_id(agent_id)
+
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    check_agent_not_pending(agent)
+
     # Prepare update data (exclude None values)
     update_data = {k: v for k, v in update.dict().items() if v is not None}
-    
+
     updated = repo.update(agent_id, **update_data)
-    
-    if not updated:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    
-    return updated
+
+    return AgentResponse.from_orm_agent(updated)
 
 
-@router.delete("/{agent_id}", status_code=204)
+@router.delete("/{agent_id}", response_model=StatusResponse)
 def delete_agent(
     agent_id: str,
     session: Session = Depends(get_session)
 ):
-    """Delete an agent and all associated data."""
+    """
+    Soft delete an agent (v5.0).
+
+    Marks agent for deletion (deletion_status='PENDING').
+    Physical deletion is performed by the GarbageCollector worker.
+    """
     repo = AgentRepository(session)
-    
-    if not repo.delete(agent_id):
+    agent = repo.get_by_id(agent_id)
+
+    if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Unregister triggers
+    trigger_manager = get_trigger_manager()
+    trigger_manager.unregister_triggers_for_agent(agent_id)
+
+    # Mark for deletion
+    repo.mark_for_deletion(agent_id)
+
+    logger.info(f"Marked agent {agent_id} for deletion")
+    return StatusResponse(status="marked_for_deletion")
+
+
+# ============================================================================
+# Agent Activation Endpoints (v5.0)
+# ============================================================================
+
+@router.post("/{agent_id}/activate", response_model=StatusResponse)
+def activate_agent(
+    agent_id: str,
+    session: Session = Depends(get_session)
+):
+    """
+    Activate an agent (load triggers).
+
+    Reads the live JSON file and registers all triggers.
+    """
+    repo = AgentRepository(session)
+    agent = repo.get_by_id(agent_id)
+
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    check_agent_not_pending(agent)
+
+    trigger_manager = get_trigger_manager()
+
+    # Clear any existing triggers first
+    trigger_manager.unregister_triggers_for_agent(agent_id)
+
+    # Read live JSON and register triggers
+    if agent.file_path:
+        try:
+            absolute_path = os.path.join(get_data_root(), agent.file_path)
+            graph_data = read_json_file(absolute_path)
+            triggers = graph_data.get('triggers', [])
+
+            for trigger_config in triggers:
+                trigger_manager.register_trigger(agent_id, trigger_config)
+        except FileNotFoundError:
+            logger.warning(f"Agent file not found: {agent.file_path}")
+        except Exception as e:
+            logger.error(f"Error reading agent file: {e}")
+
+    # Update agent status
+    repo.activate(agent_id)
+
+    return StatusResponse(status="active")
+
+
+@router.post("/{agent_id}/deactivate", response_model=StatusResponse)
+def deactivate_agent(
+    agent_id: str,
+    session: Session = Depends(get_session)
+):
+    """
+    Deactivate an agent (unload triggers).
+    """
+    repo = AgentRepository(session)
+    agent = repo.get_by_id(agent_id)
+
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    check_agent_not_pending(agent)
+
+    # Unregister triggers
+    trigger_manager = get_trigger_manager()
+    trigger_manager.unregister_triggers_for_agent(agent_id)
+
+    # Update agent status
+    repo.deactivate(agent_id)
+
+    return StatusResponse(status="inactive")
+
+
+# ============================================================================
+# Versions & Drafts Endpoints (v5.0)
+# ============================================================================
+
+@router.get("/{agent_id}/versions", response_model=VersionsResponse)
+def list_versions(
+    agent_id: str,
+    session: Session = Depends(get_session)
+):
+    """
+    Get all versions of an agent (live + drafts).
+    """
+    agent_repo = AgentRepository(session)
+    agent = agent_repo.get_by_id(agent_id)
+
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    versions = []
+
+    # Add live version
+    live_item = VersionItem(
+        id=agent.id,
+        name=agent.name,
+        version=agent.version,
+        base_version=None,
+        updated_at=agent.modified_at.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z',
+        is_active=agent.is_active == 1,
+        type="live"
+    )
+    versions.append(live_item)
+
+    # Add drafts
+    draft_repo = AgentDraftRepository(session)
+    drafts = draft_repo.list_by_agent(agent_id)
+
+    for draft in drafts:
+        draft_item = VersionItem(
+            id=draft.draft_id,
+            name=draft.name,
+            version=None,
+            base_version=draft.base_version,
+            updated_at=draft.updated_at,
+            is_active=None,
+            type="draft"
+        )
+        versions.append(draft_item)
+
+    return VersionsResponse(versions=versions)
+
+
+@router.post("/{agent_id}/drafts", response_model=DraftResponse, status_code=201)
+def create_draft(
+    agent_id: str,
+    draft_request: DraftCreate,
+    session: Session = Depends(get_session)
+):
+    """
+    Create a new draft from live or another draft.
+    """
+    agent_repo = AgentRepository(session)
+    agent = agent_repo.get_by_id(agent_id)
+
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    check_agent_not_pending(agent)
+
+    draft_repo = AgentDraftRepository(session)
+
+    # Resolve source
+    source = draft_request.source
+    if source == "live":
+        # Source is live version
+        source_file_path = agent.file_path
+        base_version = agent.version
+    else:
+        # Source is another draft
+        source_draft = draft_repo.get_by_id_and_agent(source, agent_id)
+        if not source_draft:
+            raise HTTPException(status_code=404, detail="Source draft not found")
+        source_file_path = source_draft.file_path
+        base_version = source_draft.base_version
+
+    if not source_file_path:
+        raise HTTPException(status_code=400, detail="Source has no file")
+
+    # Read source JSON
+    try:
+        source_absolute = os.path.join(get_data_root(), source_file_path)
+        source_data = read_json_file(source_absolute)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Source file not found")
+
+    # Generate new draft ID and path
+    new_draft_id = uuid7str()
+    relative_path = f"{agent_id}/drafts/{new_draft_id}.json"
+    absolute_path = os.path.join(get_data_root(), relative_path)
+
+    # Write draft file
+    atomic_write_json(absolute_path, source_data)
+
+    # Create draft record
+    draft = draft_repo.create(
+        agent_id=agent_id,
+        name=draft_request.name,
+        file_path=relative_path,
+        base_version=base_version,
+        draft_id=new_draft_id
+    )
+
+    return DraftResponse(
+        draft_id=draft.draft_id,
+        name=draft.name,
+        base_version=draft.base_version,
+        updated_at=draft.updated_at,
+        type="draft"
+    )
+
+
+@router.get("/{agent_id}/drafts/{draft_id}", response_model=DraftContentResponse)
+def get_draft(
+    agent_id: str,
+    draft_id: str,
+    session: Session = Depends(get_session)
+):
+    """
+    Get draft content for editing.
+    """
+    draft_repo = AgentDraftRepository(session)
+    draft = draft_repo.get_by_id_and_agent(draft_id, agent_id)
+
+    if not draft:
+        raise HTTPException(status_code=404, detail="Draft not found")
+
+    # Read file
+    try:
+        absolute_path = os.path.join(get_data_root(), draft.file_path)
+        graph_data = read_json_file(absolute_path)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Draft file not found")
+
+    return DraftContentResponse(
+        updated_at=draft.updated_at,
+        graph=graph_data
+    )
+
+
+@router.put("/{agent_id}/drafts/{draft_id}", response_model=StatusResponse)
+def update_draft(
+    agent_id: str,
+    draft_id: str,
+    update: DraftUpdate,
+    session: Session = Depends(get_session)
+):
+    """
+    Update draft content (autosave).
+
+    Supports optimistic locking via expected_updated_at.
+    """
+    draft_repo = AgentDraftRepository(session)
+    draft = draft_repo.get_by_id_and_agent(draft_id, agent_id)
+
+    if not draft:
+        raise HTTPException(status_code=404, detail="Draft not found")
+
+    # Optimistic locking check
+    if update.expected_updated_at and draft.updated_at != update.expected_updated_at:
+        raise HTTPException(
+            status_code=409,
+            detail="Conflict: draft was modified by another process"
+        )
+
+    # Write graph to file
+    absolute_path = os.path.join(get_data_root(), draft.file_path)
+    atomic_write_json(absolute_path, update.graph)
+
+    # Update draft record
+    try:
+        updated_draft = draft_repo.update_with_lock_check(
+            draft_id=draft_id,
+            agent_id=agent_id,
+            expected_updated_at=update.expected_updated_at,
+            name=update.name
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=409,
+            detail="Conflict: draft was modified by another process"
+        )
+
+    return StatusResponse(status="saved")
+
+
+@router.delete("/{agent_id}/drafts/{draft_id}", response_model=StatusResponse)
+def delete_draft(
+    agent_id: str,
+    draft_id: str,
+    session: Session = Depends(get_session)
+):
+    """
+    Delete a draft.
+    """
+    draft_repo = AgentDraftRepository(session)
+    draft = draft_repo.get_by_id_and_agent(draft_id, agent_id)
+
+    if not draft:
+        raise HTTPException(status_code=404, detail="Draft not found")
+
+    file_path = draft.file_path
+
+    # Delete from database
+    draft_repo.delete(draft_id)
+
+    # Delete file (best-effort)
+    try:
+        absolute_path = os.path.join(get_data_root(), file_path)
+        if os.path.exists(absolute_path):
+            os.remove(absolute_path)
+    except OSError as e:
+        logger.warning(f"Failed to delete draft file {file_path}: {e}")
+
+    return StatusResponse(status="deleted")
+
+
+@router.post("/{agent_id}/drafts/{draft_id}/deploy", response_model=DeployResponse)
+def deploy_draft(
+    agent_id: str,
+    draft_id: str,
+    session: Session = Depends(get_session)
+):
+    """
+    Deploy a draft as the new live version.
+    """
+    agent_repo = AgentRepository(session)
+    agent = agent_repo.get_by_id(agent_id)
+
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    check_agent_not_pending(agent)
+
+    draft_repo = AgentDraftRepository(session)
+    draft = draft_repo.get_by_id_and_agent(draft_id, agent_id)
+
+    if not draft:
+        raise HTTPException(status_code=404, detail="Draft not found")
+
+    # Check for version conflict
+    if draft.base_version != agent.version:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Conflict: draft is based on v{draft.base_version}, "
+                   f"but current version is v{agent.version}"
+        )
+
+    # Read and validate draft
+    try:
+        draft_absolute = os.path.join(get_data_root(), draft.file_path)
+        graph_data = read_json_file(draft_absolute)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Draft file not found")
+
+    # Validate triggers config
+    trigger_manager = get_trigger_manager()
+    triggers = graph_data.get('triggers', [])
+    is_valid, error_msg = trigger_manager.validate_triggers_config(triggers)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=f"Invalid triggers: {error_msg}")
+
+    # Prepare new version
+    new_version = agent.version + 1
+    new_relative_path = f"{agent_id}/v{new_version}.json"
+    new_absolute_path = os.path.join(get_data_root(), new_relative_path)
+
+    # Write new version file (BEFORE transaction)
+    atomic_write_json(new_absolute_path, graph_data)
+
+    # Update database (transaction)
+    try:
+        # Update agent - initially set is_active=0
+        agent.version = new_version
+        agent.file_path = new_relative_path
+        agent.is_active = 0
+        agent.modified_at = datetime.utcnow()
+        session.commit()
+
+        # Delete draft record
+        draft_repo.delete(draft_id)
+
+    except Exception as e:
+        session.rollback()
+        # Clean up new version file
+        try:
+            if os.path.exists(new_absolute_path):
+                os.remove(new_absolute_path)
+        except OSError:
+            pass
+        raise HTTPException(status_code=500, detail=f"Deploy failed: {e}")
+
+    # Rotate triggers (AFTER commit)
+    try:
+        trigger_manager.unregister_triggers_for_agent(agent_id)
+        for trigger_config in triggers:
+            trigger_manager.register_trigger(agent_id, trigger_config)
+
+        # Set is_active=1 if triggers registered successfully
+        agent_repo.activate(agent_id)
+
+    except Exception as e:
+        logger.error(f"Failed to activate triggers for agent {agent_id}: {e}")
+        # Agent remains is_active=0 but deploy succeeded
+        return DeployResponse(status="deployed_inactive", new_version=new_version)
+
+    # Delete draft file (best-effort)
+    try:
+        if os.path.exists(draft_absolute):
+            os.remove(draft_absolute)
+    except OSError as e:
+        logger.warning(f"Failed to delete draft file: {e}")
+
+    logger.info(f"Deployed agent {agent_id} to v{new_version}")
+    return DeployResponse(status="deployed", new_version=new_version)
 
 
 # ============================================================================

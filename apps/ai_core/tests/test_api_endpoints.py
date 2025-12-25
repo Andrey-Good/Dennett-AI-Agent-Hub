@@ -1,5 +1,9 @@
 from fastapi.testclient import TestClient
-from apps.ai_core.ai_core.main import app  # Still imports from main.py
+
+try:
+    from apps.ai_core.ai_core.main import app
+except ModuleNotFoundError:
+    from ai_core.main import app
 
 client = TestClient(app)
 

@@ -5,17 +5,30 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Query, Depends, HTTPException
 
-from apps.ai_core.ai_core.db.models import (
-    ModelInfoShort,
-    ModelInfoDetailed,
-    GGUFProvider,
-    SearchFilters,
-    ErrorResponse,
-    SortType,
-)
-from apps.ai_core.ai_core.logic.huggingface_service import HuggingFaceService
-from apps.ai_core.ai_core.api.dependencies import get_hf_service  # verify_token
-from apps.ai_core.ai_core.api.errors import handle_service_error
+try:
+    from apps.ai_core.ai_core.db.models import (
+        ModelInfoShort,
+        ModelInfoDetailed,
+        GGUFProvider,
+        SearchFilters,
+        ErrorResponse,
+        SortType,
+    )
+    from apps.ai_core.ai_core.logic.huggingface_service import HuggingFaceService
+    from apps.ai_core.ai_core.api.dependencies import get_hf_service
+    from apps.ai_core.ai_core.api.errors import handle_service_error
+except ModuleNotFoundError:
+    from ai_core.db.models import (
+        ModelInfoShort,
+        ModelInfoDetailed,
+        GGUFProvider,
+        SearchFilters,
+        ErrorResponse,
+        SortType,
+    )
+    from ai_core.logic.huggingface_service import HuggingFaceService
+    from ai_core.api.dependencies import get_hf_service
+    from ai_core.api.errors import handle_service_error
 
 
 logger = logging.getLogger(__name__)

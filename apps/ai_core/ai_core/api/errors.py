@@ -2,7 +2,10 @@
 import logging
 from fastapi import HTTPException
 
-from apps.ai_core.ai_core.db.models import ErrorResponse
+try:
+    from apps.ai_core.ai_core.db.models import ErrorResponse
+except ModuleNotFoundError:
+    from ai_core.db.models import ErrorResponse
 
 
 logger = logging.getLogger(__name__)

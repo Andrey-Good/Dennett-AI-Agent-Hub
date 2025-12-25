@@ -78,10 +78,16 @@ class AgentGarbageCollector:
         session = session_factory()
 
         try:
-            from apps.ai_core.ai_core.db.repositories import (
-                AgentRepository, AgentDraftRepository, AgentTestCaseRepository
-            )
-            from apps.ai_core.ai_core.logic.trigger_manager import get_trigger_manager
+            try:
+                from apps.ai_core.ai_core.db.repositories import (
+                    AgentRepository, AgentDraftRepository, AgentTestCaseRepository
+                )
+                from apps.ai_core.ai_core.logic.trigger_manager import get_trigger_manager
+            except ModuleNotFoundError:
+                from ai_core.db.repositories import (
+                    AgentRepository, AgentDraftRepository, AgentTestCaseRepository
+                )
+                from ai_core.logic.trigger_manager import get_trigger_manager
 
             agent_repo = AgentRepository(session)
             pending_agents = agent_repo.list_pending_deletion()

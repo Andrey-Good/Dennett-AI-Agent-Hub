@@ -1,4 +1,5 @@
-from apps.ai_core.ai_core.api import (
+# Use relative imports to avoid circular dependencies
+from . import (
     hub,
     downloads,
     local_models,

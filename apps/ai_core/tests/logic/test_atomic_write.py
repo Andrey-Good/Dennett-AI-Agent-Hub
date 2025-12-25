@@ -12,7 +12,10 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from apps.ai_core.ai_core.logic.atomic_write import atomic_write_json, read_json_file
+try:
+    from apps.ai_core.ai_core.logic.atomic_write import atomic_write_json, read_json_file
+except ModuleNotFoundError:
+    from ai_core.logic.atomic_write import atomic_write_json, read_json_file
 
 
 class TestAtomicWriteJson:

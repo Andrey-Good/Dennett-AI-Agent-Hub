@@ -3,14 +3,25 @@ import asyncio
 from typing import List, Optional
 from huggingface_hub import HfApi  # type: ignore
 import logging
-from apps.ai_core.ai_core.db.models import (
-    ModelInfoShort,
-    ModelInfoDetailed,
-    GGUFProvider,
-    SearchFilters,
-    TaskType,
-    SortType,
-)
+
+try:
+    from apps.ai_core.ai_core.db.models import (
+        ModelInfoShort,
+        ModelInfoDetailed,
+        GGUFProvider,
+        SearchFilters,
+        TaskType,
+        SortType,
+    )
+except ModuleNotFoundError:
+    from ai_core.db.models import (
+        ModelInfoShort,
+        ModelInfoDetailed,
+        GGUFProvider,
+        SearchFilters,
+        TaskType,
+        SortType,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +35,10 @@ class HuggingFaceService:
         Args:
             token: Optional HF API token for authenticated requests
         """
-        from apps.ai_core.ai_core.config.settings import config
+        try:
+            from apps.ai_core.ai_core.config.settings import config
+        except ModuleNotFoundError:
+            from ai_core.config.settings import config
 
         # Use config token if not provided
         if token is None:

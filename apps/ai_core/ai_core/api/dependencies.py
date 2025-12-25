@@ -1,14 +1,20 @@
 """Service dependencies and authentication"""
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
-from apps.ai_core.ai_core.config.settings import config
-from apps.ai_core.ai_core.db.models import ErrorResponse
-from apps.ai_core.ai_core.logic.huggingface_service import HuggingFaceService
-from apps.ai_core.ai_core.logic.download_manager import DownloadManager
-from apps.ai_core.ai_core.logic.local_storage import LocalStorage
-
 from typing import AsyncGenerator, Optional
+
+try:
+    from apps.ai_core.ai_core.config.settings import config
+    from apps.ai_core.ai_core.db.models import ErrorResponse
+    from apps.ai_core.ai_core.logic.huggingface_service import HuggingFaceService
+    from apps.ai_core.ai_core.logic.download_manager import DownloadManager
+    from apps.ai_core.ai_core.logic.local_storage import LocalStorage
+except ModuleNotFoundError:
+    from ai_core.config.settings import config
+    from ai_core.db.models import ErrorResponse
+    from ai_core.logic.huggingface_service import HuggingFaceService
+    from ai_core.logic.download_manager import DownloadManager
+    from ai_core.logic.local_storage import LocalStorage
 from contextlib import asynccontextmanager
 
 security = HTTPBearer()

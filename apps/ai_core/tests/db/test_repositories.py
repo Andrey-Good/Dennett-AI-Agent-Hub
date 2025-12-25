@@ -11,10 +11,16 @@ from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from apps.ai_core.ai_core.db.orm_models import Base, Agent, AgentRun, AgentTestCase
-from apps.ai_core.ai_core.db.repositories import (
-    AgentRepository, AgentRunRepository, AgentTestCaseRepository, AgentDraftRepository
-)
+try:
+    from apps.ai_core.ai_core.db.orm_models import Base, Agent, AgentRun, AgentTestCase
+    from apps.ai_core.ai_core.db.repositories import (
+        AgentRepository, AgentRunRepository, AgentTestCaseRepository, AgentDraftRepository
+    )
+except ModuleNotFoundError:
+    from ai_core.db.orm_models import Base, Agent, AgentRun, AgentTestCase
+    from ai_core.db.repositories import (
+        AgentRepository, AgentRunRepository, AgentTestCaseRepository, AgentDraftRepository
+    )
 
 
 # ============================================================================

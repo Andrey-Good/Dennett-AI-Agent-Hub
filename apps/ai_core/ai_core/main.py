@@ -6,22 +6,32 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from apps.ai_core.ai_core.config.settings import config
-from apps.ai_core.ai_core.api import hub, downloads, local_models, storage, health
-
-from apps.ai_core.ai_core.db.session import DatabaseConfig, initialize_database, get_database_manager
-from apps.ai_core.ai_core.db.init_db import get_database_url
-from apps.ai_core.ai_core.api.agents_api import router as agents_router
-from apps.ai_core.ai_core.api.triggers_api import router as triggers_router, agent_triggers_router
-
-from apps.ai_core.ai_core.logic.priority_policy import init_priority_policy, get_priority_policy
-from apps.ai_core.ai_core.logic.trigger_manager import init_trigger_manager, get_trigger_manager
-from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
-from apps.ai_core.ai_core.workers.garbage_collector import init_garbage_collector
-from apps.ai_core.ai_core.db.migrator import run_incremental_migrations
-
 from contextlib import asynccontextmanager
+
+try:
+    from apps.ai_core.ai_core.config.settings import config
+    from apps.ai_core.ai_core.api import hub, downloads, local_models, storage, health
+    from apps.ai_core.ai_core.db.session import DatabaseConfig, initialize_database, get_database_manager
+    from apps.ai_core.ai_core.db.init_db import get_database_url
+    from apps.ai_core.ai_core.api.agents_api import router as agents_router
+    from apps.ai_core.ai_core.api.triggers_api import router as triggers_router, agent_triggers_router
+    from apps.ai_core.ai_core.logic.priority_policy import init_priority_policy, get_priority_policy
+    from apps.ai_core.ai_core.logic.trigger_manager import init_trigger_manager, get_trigger_manager
+    from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
+    from apps.ai_core.ai_core.workers.garbage_collector import init_garbage_collector
+    from apps.ai_core.ai_core.db.migrator import run_incremental_migrations
+except ModuleNotFoundError:
+    from ai_core.config.settings import config
+    from ai_core.api import hub, downloads, local_models, storage, health
+    from ai_core.db.session import DatabaseConfig, initialize_database, get_database_manager
+    from ai_core.db.init_db import get_database_url
+    from ai_core.api.agents_api import router as agents_router
+    from ai_core.api.triggers_api import router as triggers_router, agent_triggers_router
+    from ai_core.logic.priority_policy import init_priority_policy, get_priority_policy
+    from ai_core.logic.trigger_manager import init_trigger_manager, get_trigger_manager
+    from ai_core.logic.filesystem_manager import file_system_manager
+    from ai_core.workers.garbage_collector import init_garbage_collector
+    from ai_core.db.migrator import run_incremental_migrations
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
@@ -38,7 +48,10 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting application...")
 
-    from apps.ai_core.ai_core.api.dependencies import get_hf_service
+    try:
+        from apps.ai_core.ai_core.api.dependencies import get_hf_service
+    except ModuleNotFoundError:
+        from ai_core.api.dependencies import get_hf_service
     service = await get_hf_service()
 
     try:
@@ -59,8 +72,12 @@ async def lifespan(app: FastAPI):
         logger.info("Incremental migrations completed")
 
         logger.info("Reading asset storage path from database settings...")
-        from apps.ai_core.ai_core.logic.settings_service import SettingsService
-        from apps.ai_core.ai_core.db.session import get_database_manager
+        try:
+            from apps.ai_core.ai_core.logic.settings_service import SettingsService
+            from apps.ai_core.ai_core.db.session import get_database_manager
+        except ModuleNotFoundError:
+            from ai_core.logic.settings_service import SettingsService
+            from ai_core.db.session import get_database_manager
 
         db_manager = get_database_manager()
         session = db_manager.create_session()

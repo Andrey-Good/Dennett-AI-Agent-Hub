@@ -38,6 +38,20 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# Import Helpers (support both app and test contexts)
+# =============================================================================
+
+def _get_repositories():
+    """Import repositories module, handling both app and test contexts."""
+    try:
+        from apps.ai_core.ai_core.db import repositories
+        return repositories
+    except ModuleNotFoundError:
+        from ai_core.db import repositories
+        return repositories
+
+
+# =============================================================================
 # Enums
 # =============================================================================
 
@@ -448,7 +462,8 @@ class TriggerManager:
         Returns:
             SetAgentTriggersResponse with the final trigger list
         """
-        from apps.ai_core.ai_core.db.repositories import TriggerInstanceRepository
+        repos = _get_repositories()
+        TriggerInstanceRepository = repos.TriggerInstanceRepository
 
         session = self._get_session()
         try:
@@ -528,7 +543,8 @@ class TriggerManager:
         Returns:
             DeleteAgentTriggersResponse with deletion count
         """
-        from apps.ai_core.ai_core.db.repositories import TriggerInstanceRepository
+        repos = _get_repositories()
+        TriggerInstanceRepository = repos.TriggerInstanceRepository
 
         session = self._get_session()
         try:
@@ -560,7 +576,8 @@ class TriggerManager:
         Returns:
             SetAgentTriggersEnabledResponse with affected count
         """
-        from apps.ai_core.ai_core.db.repositories import TriggerInstanceRepository
+        repos = _get_repositories()
+        TriggerInstanceRepository = repos.TriggerInstanceRepository
 
         session = self._get_session()
         try:
@@ -585,7 +602,8 @@ class TriggerManager:
         Returns:
             List of TriggerInstanceResponse objects
         """
-        from apps.ai_core.ai_core.db.repositories import TriggerInstanceRepository
+        repos = _get_repositories()
+        TriggerInstanceRepository = repos.TriggerInstanceRepository
 
         session = self._get_session()
         try:
@@ -605,7 +623,8 @@ class TriggerManager:
         Returns:
             List of TriggerInstanceResponse objects
         """
-        from apps.ai_core.ai_core.db.repositories import TriggerInstanceRepository
+        repos = _get_repositories()
+        TriggerInstanceRepository = repos.TriggerInstanceRepository
 
         session = self._get_session()
         try:
@@ -625,7 +644,8 @@ class TriggerManager:
         Returns:
             TriggerInstanceResponse or None if not found
         """
-        from apps.ai_core.ai_core.db.repositories import TriggerInstanceRepository
+        repos = _get_repositories()
+        TriggerInstanceRepository = repos.TriggerInstanceRepository
 
         session = self._get_session()
         try:
@@ -656,10 +676,9 @@ class TriggerManager:
         Returns:
             run_id of the created execution, or None if rejected
         """
-        from apps.ai_core.ai_core.db.repositories import (
-            TriggerInstanceRepository,
-            AgentRunRepository
-        )
+        repos = _get_repositories()
+        TriggerInstanceRepository = repos.TriggerInstanceRepository
+        AgentRunRepository = repos.AgentRunRepository
 
         # Check if handle exists and is active
         handle = self._active_instances.get(trigger_instance_id)
@@ -771,7 +790,8 @@ class TriggerManager:
         and starts/stops/restarts instances as needed.
         """
         async with self._reconcile_lock:
-            from apps.ai_core.ai_core.db.repositories import TriggerInstanceRepository
+            repos = _get_repositories()
+            TriggerInstanceRepository = repos.TriggerInstanceRepository
 
             session = self._get_session()
             try:
@@ -987,7 +1007,8 @@ class TriggerManager:
 
         if handle.crash_count >= self._max_crash_retries:
             # Mark as FAILED in DB
-            from apps.ai_core.ai_core.db.repositories import TriggerInstanceRepository
+            repos = _get_repositories()
+            TriggerInstanceRepository = repos.TriggerInstanceRepository
 
             session = self._get_session()
             try:
@@ -1043,13 +1064,23 @@ class TriggerManager:
             updated_at=trigger.updated_at
         )
 
-    def unregister_triggers_for_agent(self, agent_id: str) -> None:
+    def unregister_triggers_for_agent(self, agent_id: str) -> int:
         """
-        Unregister triggers for an agent that is being deleted.
+        Unregister all triggers for an agent.
 
-        This is called synchronously from agents_api when an agent
-        is marked for deletion.
+        Stops all running triggers and deletes them from the database.
+        Called when an agent is deactivated or deleted.
+
+        Args:
+            agent_id: UUID of the agent
+
+        Returns:
+            Number of triggers deleted
         """
+        repos = _get_repositories()
+        TriggerInstanceRepository = repos.TriggerInstanceRepository
+
+        # Mark in-memory handles for stopping
         to_remove = [
             handle.trigger_instance_id
             for handle in self._active_instances.values()
@@ -1062,7 +1093,23 @@ class TriggerManager:
                 handle.stopping = True
                 handle.cancel_event.set()
 
-        logger.info(f"Marked {len(to_remove)} triggers for stopping (agent={agent_id})")
+        # Delete from database
+        deleted = 0
+        session = self._get_session()
+        try:
+            repo = TriggerInstanceRepository(session)
+            deleted = repo.delete_by_agent(agent_id)
+
+            # Wake up reconcile loop
+            self._wake_event.set()
+
+        except Exception as e:
+            logger.error(f"unregister_triggers_for_agent failed: {e}")
+        finally:
+            session.close()
+
+        logger.info(f"Unregistered {deleted} triggers for agent {agent_id}")
+        return deleted
 
     # =========================================================================
     # Legacy/Compatibility Methods (for existing code)
@@ -1074,12 +1121,70 @@ class TriggerManager:
         trigger_config: Dict[str, Any]
     ) -> bool:
         """
-        Legacy method for backward compatibility.
+        Register a single trigger for an agent (synchronous wrapper).
 
-        Use set_agent_triggers() for new code.
+        This method creates a trigger in the database. The reconcile loop
+        will pick it up and start it asynchronously.
+
+        Args:
+            agent_id: UUID of the agent
+            trigger_config: Trigger configuration dict with 'type' or 'trigger_id'
+
+        Returns:
+            True if created successfully
         """
-        logger.warning("register_trigger() is deprecated, use set_agent_triggers()")
-        return True
+        repos = _get_repositories()
+        TriggerInstanceRepository = repos.TriggerInstanceRepository
+
+        # Extract trigger_id from config
+        trigger_id = trigger_config.get('type') or trigger_config.get('trigger_id')
+        if not trigger_id:
+            logger.error("register_trigger: missing 'type' or 'trigger_id' in config")
+            return False
+
+        # Extract nested config or use the whole dict minus type
+        config = trigger_config.get('config', {})
+        if not config:
+            # Fallback: use all keys except 'type' and 'trigger_id'
+            config = {k: v for k, v in trigger_config.items()
+                      if k not in ('type', 'trigger_id', 'config')}
+
+        session = self._get_session()
+        try:
+            repo = TriggerInstanceRepository(session)
+
+            # Check if trigger already exists for this agent + trigger_id
+            existing = repo.list_by_agent(agent_id)
+            for t in existing:
+                if t.trigger_id == trigger_id:
+                    # Update existing trigger
+                    new_hash = compute_config_hash(config)
+                    if t.config_hash != new_hash:
+                        t.set_config(config)
+                        t.updated_at = datetime.utcnow()
+                        session.commit()
+                        logger.info(f"Updated trigger {t.trigger_instance_id} for agent {agent_id}")
+                    return True
+
+            # Create new trigger
+            repo.create(
+                agent_id=agent_id,
+                trigger_id=trigger_id,
+                config=config,
+                status='ENABLED'
+            )
+
+            # Wake up reconcile loop
+            self._wake_event.set()
+
+            logger.info(f"Created trigger {trigger_id} for agent {agent_id}")
+            return True
+
+        except Exception as e:
+            logger.error(f"register_trigger failed: {e}")
+            return False
+        finally:
+            session.close()
 
     def validate_triggers_config(
         self,

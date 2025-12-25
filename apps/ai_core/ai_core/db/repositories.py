@@ -8,13 +8,15 @@ encapsulating database access and business logic.
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, and_, or_
+from sqlalchemy import desc, and_
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
-import json
 import logging
 
-from apps.ai_core.ai_core.db.orm_models import Agent, AgentRun, AgentTestCase, AgentDraft, TriggerInstance
+try:
+    from apps.ai_core.ai_core.db.orm_models import Agent, AgentRun, AgentTestCase, AgentDraft, TriggerInstance
+except ModuleNotFoundError:
+    from ai_core.db.orm_models import Agent, AgentRun, AgentTestCase, AgentDraft, TriggerInstance
 
 logger = logging.getLogger(__name__)
 

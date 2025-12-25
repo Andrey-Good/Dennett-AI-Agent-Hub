@@ -57,7 +57,7 @@ class TestComputeConfigHash:
 
     def test_same_config_same_hash(self):
         """Same config should produce same hash."""
-        from apps.ai_core.ai_core.logic.trigger_manager import compute_config_hash
+        from ai_core.logic.trigger_manager import compute_config_hash
 
         config1 = {"schedule": "* * * * *", "enabled": True}
         config2 = {"schedule": "* * * * *", "enabled": True}
@@ -66,7 +66,7 @@ class TestComputeConfigHash:
 
     def test_different_order_same_hash(self):
         """Config with different key order should produce same hash."""
-        from apps.ai_core.ai_core.logic.trigger_manager import compute_config_hash
+        from ai_core.logic.trigger_manager import compute_config_hash
 
         config1 = {"a": 1, "b": 2}
         config2 = {"b": 2, "a": 1}
@@ -75,7 +75,7 @@ class TestComputeConfigHash:
 
     def test_different_config_different_hash(self):
         """Different config should produce different hash."""
-        from apps.ai_core.ai_core.logic.trigger_manager import compute_config_hash
+        from ai_core.logic.trigger_manager import compute_config_hash
 
         config1 = {"schedule": "* * * * *"}
         config2 = {"schedule": "0 * * * *"}
@@ -84,7 +84,7 @@ class TestComputeConfigHash:
 
     def test_empty_config(self):
         """Empty config should produce consistent hash."""
-        from apps.ai_core.ai_core.logic.trigger_manager import compute_config_hash
+        from ai_core.logic.trigger_manager import compute_config_hash
 
         assert compute_config_hash({}) == compute_config_hash({})
 
@@ -94,7 +94,7 @@ class TestTriggerConfig:
 
     def test_valid_config(self):
         """Valid config should parse correctly."""
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerConfig, TriggerStatus
+        from ai_core.logic.trigger_manager import TriggerConfig, TriggerStatus
 
         config = TriggerConfig(
             trigger_id="cron",
@@ -108,7 +108,7 @@ class TestTriggerConfig:
 
     def test_default_status(self):
         """Default status should be ENABLED."""
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerConfig, TriggerStatus
+        from ai_core.logic.trigger_manager import TriggerConfig, TriggerStatus
 
         config = TriggerConfig(trigger_id="webhook")
 
@@ -116,7 +116,7 @@ class TestTriggerConfig:
 
     def test_default_config(self):
         """Default config should be empty dict."""
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerConfig
+        from ai_core.logic.trigger_manager import TriggerConfig
 
         config = TriggerConfig(trigger_id="webhook")
 
@@ -128,7 +128,7 @@ class TestTriggerRegistry:
 
     def test_register_plugin(self):
         """Should register a plugin."""
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerRegistry, TriggerPlugin
+        from ai_core.logic.trigger_manager import TriggerRegistry, TriggerPlugin
 
         registry = TriggerRegistry()
 
@@ -146,7 +146,7 @@ class TestTriggerRegistry:
 
     def test_get_nonexistent_plugin(self):
         """Should return None for nonexistent plugin."""
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerRegistry
+        from ai_core.logic.trigger_manager import TriggerRegistry
 
         registry = TriggerRegistry()
 
@@ -158,7 +158,7 @@ class TestTriggerInstanceResponse:
 
     def test_from_orm(self, mock_trigger_instance):
         """Should convert ORM model to response."""
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerInstanceResponse, TriggerStatus
+        from ai_core.logic.trigger_manager import TriggerInstanceResponse, TriggerStatus
 
         response = TriggerInstanceResponse(
             trigger_instance_id=mock_trigger_instance.trigger_instance_id,
@@ -184,7 +184,7 @@ class TestRuntimeHandle:
 
     def test_create_handle(self):
         """Should create a runtime handle."""
-        from apps.ai_core.ai_core.logic.trigger_manager import RuntimeHandle
+        from ai_core.logic.trigger_manager import RuntimeHandle
 
         cancel_event = asyncio.Event()
         task = MagicMock()
@@ -205,7 +205,7 @@ class TestRuntimeHandle:
 
     def test_default_values(self):
         """Should have correct default values."""
-        from apps.ai_core.ai_core.logic.trigger_manager import RuntimeHandle
+        from ai_core.logic.trigger_manager import RuntimeHandle
 
         cancel_event = asyncio.Event()
         task = MagicMock()
@@ -231,12 +231,12 @@ class TestTriggerManagerSingleton:
     def test_singleton_same_instance(self):
         """Multiple calls should return same instance."""
         # Reset singleton for test
-        from apps.ai_core.ai_core.logic import trigger_manager
+        from ai_core.logic import trigger_manager
         trigger_manager.TriggerManager._instance = None
         trigger_manager.TriggerManager._initialized = False
         trigger_manager._trigger_manager = None
 
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerManager
+        from ai_core.logic.trigger_manager import TriggerManager
 
         manager1 = TriggerManager()
         manager2 = TriggerManager()
@@ -254,12 +254,12 @@ class TestTriggerManagerValidation:
     def test_valid_triggers(self):
         """Should validate correct trigger configs."""
         # Reset singleton for test
-        from apps.ai_core.ai_core.logic import trigger_manager
+        from ai_core.logic import trigger_manager
         trigger_manager.TriggerManager._instance = None
         trigger_manager.TriggerManager._initialized = False
         trigger_manager._trigger_manager = None
 
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerManager
+        from ai_core.logic.trigger_manager import TriggerManager
 
         manager = TriggerManager()
 
@@ -279,12 +279,12 @@ class TestTriggerManagerValidation:
 
     def test_invalid_not_list(self):
         """Should reject non-list input."""
-        from apps.ai_core.ai_core.logic import trigger_manager
+        from ai_core.logic import trigger_manager
         trigger_manager.TriggerManager._instance = None
         trigger_manager.TriggerManager._initialized = False
         trigger_manager._trigger_manager = None
 
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerManager
+        from ai_core.logic.trigger_manager import TriggerManager
 
         manager = TriggerManager()
 
@@ -299,12 +299,12 @@ class TestTriggerManagerValidation:
 
     def test_invalid_missing_type(self):
         """Should reject triggers without type."""
-        from apps.ai_core.ai_core.logic import trigger_manager
+        from ai_core.logic import trigger_manager
         trigger_manager.TriggerManager._instance = None
         trigger_manager.TriggerManager._initialized = False
         trigger_manager._trigger_manager = None
 
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerManager
+        from ai_core.logic.trigger_manager import TriggerManager
 
         manager = TriggerManager()
 
@@ -325,7 +325,7 @@ class TestSetAgentTriggersRequest:
 
     def test_valid_request(self):
         """Should parse valid request."""
-        from apps.ai_core.ai_core.logic.trigger_manager import (
+        from ai_core.logic.trigger_manager import (
             SetAgentTriggersRequest,
             TriggerConfig,
             TriggerStatus
@@ -348,7 +348,7 @@ class TestTriggerStatus:
 
     def test_enum_values(self):
         """Should have correct enum values."""
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerStatus
+        from ai_core.logic.trigger_manager import TriggerStatus
 
         assert TriggerStatus.ENABLED.value == "ENABLED"
         assert TriggerStatus.DISABLED.value == "DISABLED"
@@ -356,7 +356,7 @@ class TestTriggerStatus:
 
     def test_string_conversion(self):
         """Should convert to/from string."""
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerStatus
+        from ai_core.logic.trigger_manager import TriggerStatus
 
         assert str(TriggerStatus.ENABLED) == "TriggerStatus.ENABLED"
         assert TriggerStatus("ENABLED") == TriggerStatus.ENABLED
@@ -367,7 +367,7 @@ class TestResponseModels:
 
     def test_set_agent_triggers_response(self):
         """Should create valid response."""
-        from apps.ai_core.ai_core.logic.trigger_manager import SetAgentTriggersResponse
+        from ai_core.logic.trigger_manager import SetAgentTriggersResponse
 
         response = SetAgentTriggersResponse(
             agent_id="agent-123",
@@ -384,7 +384,7 @@ class TestResponseModels:
 
     def test_delete_agent_triggers_response(self):
         """Should create valid delete response."""
-        from apps.ai_core.ai_core.logic.trigger_manager import DeleteAgentTriggersResponse
+        from ai_core.logic.trigger_manager import DeleteAgentTriggersResponse
 
         response = DeleteAgentTriggersResponse(
             agent_id="agent-123",
@@ -396,7 +396,7 @@ class TestResponseModels:
 
     def test_set_enabled_response(self):
         """Should create valid enable/disable response."""
-        from apps.ai_core.ai_core.logic.trigger_manager import SetAgentTriggersEnabledResponse
+        from ai_core.logic.trigger_manager import SetAgentTriggersEnabledResponse
 
         response = SetAgentTriggersEnabledResponse(
             agent_id="agent-123",
@@ -416,7 +416,7 @@ class TestTriggerManagerIntegration:
     @pytest.fixture(autouse=True)
     def reset_singleton(self):
         """Reset singleton before and after each test."""
-        from apps.ai_core.ai_core.logic import trigger_manager
+        from ai_core.logic import trigger_manager
         trigger_manager.TriggerManager._instance = None
         trigger_manager.TriggerManager._initialized = False
         trigger_manager._trigger_manager = None
@@ -428,7 +428,7 @@ class TestTriggerManagerIntegration:
     @pytest.mark.asyncio
     async def test_start_and_stop(self):
         """Should start and stop without errors."""
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerManager
+        from ai_core.logic.trigger_manager import TriggerManager
 
         mock_session_factory = MagicMock()
 
@@ -443,7 +443,7 @@ class TestTriggerManagerIntegration:
     @pytest.mark.asyncio
     async def test_list_triggers_empty(self):
         """Should return empty list when no triggers."""
-        from apps.ai_core.ai_core.logic.trigger_manager import TriggerManager
+        from ai_core.logic.trigger_manager import TriggerManager
 
         mock_session = MagicMock()
         mock_session.close = MagicMock()
@@ -455,7 +455,7 @@ class TestTriggerManagerIntegration:
 
         manager = TriggerManager(session_factory=mock_session_factory)
 
-        with patch('apps.ai_core.ai_core.db.repositories.TriggerInstanceRepository', return_value=mock_repo):
+        with patch('ai_core.db.repositories.TriggerInstanceRepository', return_value=mock_repo):
             result = await manager.list_triggers()
 
         assert result == []

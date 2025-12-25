@@ -72,6 +72,7 @@ class Agent(Base):
     runs = relationship('AgentRun', back_populates='agent', cascade='all, delete-orphan')
     test_cases = relationship('AgentTestCase', back_populates='agent', cascade='all, delete-orphan')
     drafts = relationship('AgentDraft', back_populates='agent', cascade='all, delete-orphan')
+    trigger_instances = relationship('TriggerInstance', back_populates='agent', cascade='all, delete-orphan')
 
     __table_args__ = (
         Index('idx_agent_created', 'created_at'),
@@ -257,6 +258,74 @@ class AgentDraft(Base):
 
     def __repr__(self) -> str:
         return f"<AgentDraft(draft_id='{self.draft_id}', agent_id='{self.agent_id}', name='{self.name}')>"
+
+
+class TriggerInstance(Base):
+    """
+    Represents a trigger instance bound to an agent.
+
+    Trigger instances are the runtime configuration for triggers that
+    initiate agent executions based on events (webhooks, schedules, etc.).
+
+    Attributes:
+        trigger_instance_id: Unique UUID identifier for this trigger instance
+        agent_id: Foreign key reference to the agent
+        trigger_id: Type of trigger (e.g., 'cron', 'webhook', 'email')
+        status: Current status (ENABLED, DISABLED, FAILED)
+        config_json: JSON-serialized trigger configuration
+        config_hash: SHA-256 hash of canonical config for change detection
+        error_message: Error details if status is FAILED
+        error_at: Timestamp when error occurred
+        created_at: Timestamp when the trigger was created
+        updated_at: Timestamp of last modification
+        agent: Relationship to the Agent
+    """
+    __tablename__ = 'trigger_instances'
+
+    trigger_instance_id = Column(String(36), primary_key=True, default=uuid7str)
+    agent_id = Column(String(36), ForeignKey('agents.id', ondelete='CASCADE'),
+                      nullable=False, index=True)
+    trigger_id = Column(String(100), nullable=False, index=True)  # e.g., 'cron', 'webhook'
+    status = Column(String(20), nullable=False, default='ENABLED', index=True)  # ENABLED, DISABLED, FAILED
+    config_json = Column(Text, nullable=False)  # JSON-serialized config
+    config_hash = Column(String(64), nullable=False)  # SHA-256 hash of canonical config
+    error_message = Column(Text, nullable=True)
+    error_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow,
+                        onupdate=datetime.utcnow, index=True)
+
+    # Relationship
+    agent = relationship('Agent', back_populates='trigger_instances')
+
+    __table_args__ = (
+        Index('idx_trigger_agent_status', 'agent_id', 'status'),
+        Index('idx_trigger_status', 'status'),
+        CheckConstraint("status IN ('ENABLED', 'DISABLED', 'FAILED')", name='ck_trigger_status'),
+    )
+
+    def get_config(self) -> dict:
+        """Get config from JSON-serialized string."""
+        return json.loads(self.config_json) if self.config_json else {}
+
+    def set_config(self, config: dict) -> None:
+        """Set config as JSON-serialized string and update hash."""
+        import hashlib
+        # Canonical JSON: sorted keys, no whitespace
+        canonical = json.dumps(config, sort_keys=True, separators=(',', ':'))
+        self.config_json = json.dumps(config)
+        self.config_hash = hashlib.sha256(canonical.encode('utf-8')).hexdigest()
+
+    def is_enabled(self) -> bool:
+        """Check if trigger is enabled."""
+        return self.status == 'ENABLED'
+
+    def is_failed(self) -> bool:
+        """Check if trigger is in failed state."""
+        return self.status == 'FAILED'
+
+    def __repr__(self) -> str:
+        return f"<TriggerInstance(id='{self.trigger_instance_id}', agent='{self.agent_id}', type='{self.trigger_id}', status='{self.status}')>"
 
 
 class Execution(Base):

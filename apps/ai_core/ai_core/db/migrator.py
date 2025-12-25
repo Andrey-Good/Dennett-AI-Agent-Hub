@@ -402,6 +402,13 @@ def run_incremental_migrations(engine: Engine) -> None:
             migrate_add_agent_versioning
         )
         migrate_add_agent_versioning()
+
+        # Import and run trigger instances migration
+        from apps.ai_core.ai_core.db.migrations.add_trigger_instances import (
+            migrate_add_trigger_instances
+        )
+        migrate_add_trigger_instances()
+
         logger.info("Incremental migrations completed")
 
     except Exception as e:

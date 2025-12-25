@@ -3,11 +3,18 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from apps.ai_core.ai_core.db.models import ImportRequest, LocalModel, ErrorResponse
-from apps.ai_core.ai_core.logic.local_storage import LocalStorage
-from apps.ai_core.ai_core.logic.download_manager import DownloadManager
-from apps.ai_core.ai_core.api.dependencies import get_local_storage, get_download_manager  # verify_token
-from apps.ai_core.ai_core.api.errors import handle_service_error
+try:
+    from apps.ai_core.ai_core.db.models import ImportRequest, LocalModel, ErrorResponse
+    from apps.ai_core.ai_core.logic.local_storage import LocalStorage
+    from apps.ai_core.ai_core.logic.download_manager import DownloadManager
+    from apps.ai_core.ai_core.api.dependencies import get_local_storage, get_download_manager
+    from apps.ai_core.ai_core.api.errors import handle_service_error
+except ModuleNotFoundError:
+    from ai_core.db.models import ImportRequest, LocalModel, ErrorResponse
+    from ai_core.logic.local_storage import LocalStorage
+    from ai_core.logic.download_manager import DownloadManager
+    from ai_core.api.dependencies import get_local_storage, get_download_manager
+    from ai_core.api.errors import handle_service_error
 
 
 logger = logging.getLogger(__name__)

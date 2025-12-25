@@ -40,14 +40,24 @@ from typing import List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
 
-from apps.ai_core.ai_core.db.session import get_session
-from apps.ai_core.ai_core.db.repositories import (
-    AgentRepository, AgentRunRepository, AgentTestCaseRepository, AgentDraftRepository
-)
-from apps.ai_core.ai_core.db.orm_models import Agent, AgentRun, AgentTestCase, AgentDraft
-from apps.ai_core.ai_core.logic.atomic_write import atomic_write_json, read_json_file
-from apps.ai_core.ai_core.logic.trigger_manager import get_trigger_manager
-from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
+try:
+    from apps.ai_core.ai_core.db.session import get_session
+    from apps.ai_core.ai_core.db.repositories import (
+        AgentRepository, AgentRunRepository, AgentTestCaseRepository, AgentDraftRepository
+    )
+    from apps.ai_core.ai_core.db.orm_models import Agent, AgentRun, AgentTestCase, AgentDraft
+    from apps.ai_core.ai_core.logic.atomic_write import atomic_write_json, read_json_file
+    from apps.ai_core.ai_core.logic.trigger_manager import get_trigger_manager
+    from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
+except ModuleNotFoundError:
+    from ai_core.db.session import get_session
+    from ai_core.db.repositories import (
+        AgentRepository, AgentRunRepository, AgentTestCaseRepository, AgentDraftRepository
+    )
+    from ai_core.db.orm_models import Agent, AgentRun, AgentTestCase, AgentDraft
+    from ai_core.logic.atomic_write import atomic_write_json, read_json_file
+    from ai_core.logic.trigger_manager import get_trigger_manager
+    from ai_core.logic.filesystem_manager import file_system_manager
 
 try:
     import uuid6
@@ -885,7 +895,10 @@ def create_agent_run(
     session: Session = Depends(get_session)
 ):
     """Create a new run for an agent."""
-    from apps.ai_core.ai_core.logic.priority_policy import get_priority_policy, TaskSource
+    try:
+        from apps.ai_core.ai_core.logic.priority_policy import get_priority_policy, TaskSource
+    except ModuleNotFoundError:
+        from ai_core.logic.priority_policy import get_priority_policy, TaskSource
 
     trigger_to_source = {
         "manual": TaskSource.MANUAL_RUN,

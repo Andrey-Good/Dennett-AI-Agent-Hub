@@ -151,7 +151,10 @@ class DatabaseMigrator:
         logger.info("Creating application tables...")
         
         try:
-            from apps.ai_core.ai_core.db.orm_models import Base
+            try:
+                from apps.ai_core.ai_core.db.orm_models import Base
+            except ModuleNotFoundError:
+                from ai_core.db.orm_models import Base
             Base.metadata.create_all(bind=self.engine)
             logger.info("✅ All application tables created")
         except Exception as e:
@@ -398,15 +401,25 @@ def run_incremental_migrations(engine: Engine) -> None:
 
     try:
         # Import and run agent versioning migration
-        from apps.ai_core.ai_core.db.migrations.add_agent_versioning import (
-            migrate_add_agent_versioning
-        )
+        try:
+            from apps.ai_core.ai_core.db.migrations.add_agent_versioning import (
+                migrate_add_agent_versioning
+            )
+        except ModuleNotFoundError:
+            from ai_core.db.migrations.add_agent_versioning import (
+                migrate_add_agent_versioning
+            )
         migrate_add_agent_versioning()
 
         # Import and run trigger instances migration
-        from apps.ai_core.ai_core.db.migrations.add_trigger_instances import (
-            migrate_add_trigger_instances
-        )
+        try:
+            from apps.ai_core.ai_core.db.migrations.add_trigger_instances import (
+                migrate_add_trigger_instances
+            )
+        except ModuleNotFoundError:
+            from ai_core.db.migrations.add_trigger_instances import (
+                migrate_add_trigger_instances
+            )
         migrate_add_trigger_instances()
 
         logger.info("Incremental migrations completed")

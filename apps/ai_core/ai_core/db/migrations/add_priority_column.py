@@ -6,8 +6,12 @@ Run this ONCE to migrate existing databases.
 """
 
 from sqlalchemy import text
-from apps.ai_core.ai_core.db.session import get_database_manager
 import logging
+
+try:
+    from apps.ai_core.ai_core.db.session import get_database_manager
+except ModuleNotFoundError:
+    from ai_core.db.session import get_database_manager
 
 logger = logging.getLogger(__name__)
 

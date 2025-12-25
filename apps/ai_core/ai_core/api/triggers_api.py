@@ -21,16 +21,28 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 
-from apps.ai_core.ai_core.db.session import get_session
-from apps.ai_core.ai_core.db.repositories import AgentRepository
-from apps.ai_core.ai_core.logic.trigger_manager import (
-    get_trigger_manager,
-    TriggerInstanceResponse,
-    SetAgentTriggersRequest,
-    SetAgentTriggersResponse,
-    DeleteAgentTriggersResponse,
-    SetAgentTriggersEnabledResponse,
-)
+try:
+    from apps.ai_core.ai_core.db.session import get_session
+    from apps.ai_core.ai_core.db.repositories import AgentRepository
+    from apps.ai_core.ai_core.logic.trigger_manager import (
+        get_trigger_manager,
+        TriggerInstanceResponse,
+        SetAgentTriggersRequest,
+        SetAgentTriggersResponse,
+        DeleteAgentTriggersResponse,
+        SetAgentTriggersEnabledResponse,
+    )
+except ModuleNotFoundError:
+    from ai_core.db.session import get_session
+    from ai_core.db.repositories import AgentRepository
+    from ai_core.logic.trigger_manager import (
+        get_trigger_manager,
+        TriggerInstanceResponse,
+        SetAgentTriggersRequest,
+        SetAgentTriggersResponse,
+        DeleteAgentTriggersResponse,
+        SetAgentTriggersEnabledResponse,
+    )
 
 logger = logging.getLogger(__name__)
 

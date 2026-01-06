@@ -3,7 +3,7 @@
     "",
     "\\frontend",
     "\\frontend\\src",
-    "\\frontend\\src-tauri\\src",
+    "\\frontend\\src-tauri",
     "\\frontend\\src\\api",
     "\\frontend\\src\\assets",
     "\\frontend\\src\\components",
@@ -11,6 +11,5 @@
     "\\frontend\\src\\stores",
     "\\frontend\\src\\types"
   ],
-  "SelectedNode": "\\frontend\\src\\components\\ModelInfo.tsx",
   "PreviewInSolutionExplorer": false
 }

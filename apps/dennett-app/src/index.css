@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Taskplus-inspired theme.
+  Palette values are sampled from the reference screenshots.
+
+  Fonts: bundled Inter (see /frontend/public/fonts).
+*/
+
+/* Inter (Text) */
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter-SemiBold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* Inter Display (Headings) */
+@font-face {
+  font-family: "Inter Display";
+  src: url("/fonts/InterDisplay-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Inter Display";
+  src: url("/fonts/InterDisplay-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Inter Display";
+  src: url("/fonts/InterDisplay-SemiBold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Inter Display";
+  src: url("/fonts/InterDisplay-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+:root {
+  /* --- shadcn tokens (HSL) --- */
+  /* main background #1b1b1d */
+  --background: 240 3.57% 10.98%;
+  --foreground: 0 0% 100%;
+
+  /* card surface #202022 */
+  --card: 240 2.91% 12.94%;
+  --card-foreground: 0 0% 100%;
+
+  --popover: 240 2.91% 12.94%;
+  --popover-foreground: 0 0% 100%;
+
+  /* primary accent (blue) #4054b4 */
+  --primary: 230.04 47.83% 47.84%;
+  --primary-foreground: 0 0% 100%;
+
+  /* secondary surface #242426 */
+  --secondary: 240 2.70% 14.51%;
+  --secondary-foreground: 0 0% 100%;
+
+  --muted: 240 2.70% 14.51%;
+  --muted-foreground: 240 0.93% 42.35%;
+
+  --accent: 240 2.7% 14.5%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* borders #272729 */
+  --border: 240 2.52% 15.69%;
+  --input: 240 2.52% 15.69%;
+  --ring: 230.04 47.83% 47.84%;
+
+  --chart-1: 229.7 47.5% 47.8%;
+  --chart-2: 160 84% 39%;
+  --chart-3: 30 97% 56%;
+  --chart-4: 280 65% 60%;
+  --chart-5: 340 75% 55%;
+
+  --radius: 18px;
+
+  /* --- Taskplus extra tokens (HSL) --- */
+  /* sidebar bg #151517 */
+  --tp-sidebar: 240 4.49% 8.63%;
+  /* deep surface #242426 */
+  --tp-surface-2: 240 2.70% 14.51%;
+  /* border #272729 */
+  --tp-border: 240 2.52% 15.69%;
+  /* muted text #6b6b6d */
+  --tp-muted: 240 0.93% 42.35%;
+  /* faint text #434344 */
+  --tp-faint: 240 0.91% 26.47%;
+  /* accent blue #4054b4 */
+  --tp-blue: 230.04 47.83% 47.84%;
+  /* pill bg blue #283454 */
+  --tp-blue-bg: 224.44 35.08% 24.31%;
+  /* pill bg green #38543c */
+  --tp-green-bg: 128.57 20% 27.45%;
+  /* neutral pill bg #3c3c3c */
+  --tp-pill: 0 0% 23.53%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+  }
+
+  body {
+    /* Tauri window may be transparent; keep the page background transparent. */
+    background: transparent;
+    @apply text-foreground;
+
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    overflow: hidden;
+    color-scheme: dark;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: "Inter Display", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+}
+
+@layer components {
+  /* main rounded window */
+  .tp-window {
+    @apply relative h-full w-full overflow-hidden rounded-[28px] border;
+    border-color: hsl(var(--tp-border));
+    background: hsl(var(--background));
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.65);
+  }
+
+  /* left sidebar */
+  .tp-sidebar {
+    width: 260px;
+    background: hsl(var(--tp-sidebar));
+    border-right: 1px solid hsl(var(--tp-border));
+  }
+
+  /* common card surface */
+  .tp-surface {
+    border-radius: 18px;
+    border: 1px solid hsl(var(--tp-border));
+    background: hsl(var(--card));
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  }
+}
+
+@layer utilities {
+  /* subtle thin separators */
+  .tp-separator {
+    background: hsl(var(--tp-border));
+    height: 1px;
+  }
+
+  /* dotted canvas background (for node editor) */
+  .tp-dots {
+    background-color: #171717;
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+}

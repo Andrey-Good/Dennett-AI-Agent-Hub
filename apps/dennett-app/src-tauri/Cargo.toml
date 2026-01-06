@@ -1,0 +1,26 @@
+[package]
+name = "dennet-app"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+# `tauri-build` versions on crates.io do not match the JS CLI cadence.
+# 2.5.3 is currently the newest tauri-build available on crates.io and works
+# with tauri 2.9.x.
+tauri-build = { version = "2.5.3", features = [] }
+
+[dependencies]
+# Pin to the same major+minor as the JS packages (2.9.x) to avoid blank-screen
+# issues caused by incompatible mixes of Tauri versions.
+tauri = { version = "2.9.0", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# (Optional) DB dependencies that are already in the template.
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "migrate", "chrono", "uuid"] }
+tokio = { version = "1.0", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }

@@ -3,6 +3,22 @@
   "WorkspaceRootPath": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src-tauri\\Cargo.toml||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src-tauri\\Cargo.toml||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src-tauri\\build.rs||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src-tauri\\build.rs||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\ModelGrid.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src\\components\\ModelGrid.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\Header.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src\\components\\Header.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\ModelInfo.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src\\components\\ModelInfo.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
@@ -13,10 +29,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\Chat.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src\\components\\Chat.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\ModelGrid.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src\\components\\ModelGrid.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\Sidebar.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}",
@@ -39,10 +51,6 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src\\stores\\modelStore.ts||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\Header.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src\\components\\Header.tsx||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\api\\client.ts||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src\\api\\client.ts||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
@@ -53,14 +61,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\apps\\ai_core\\ai_core\\main.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:apps\\ai_core\\ai_core\\main.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src-tauri\\Cargo.toml||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src-tauri\\Cargo.toml||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src-tauri\\build.rs||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src-tauri\\build.rs||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src-tauri\\capabilities\\default.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
@@ -110,11 +110,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 6,
+          "SelectedChildIndex": 13,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 10,
               "Title": "index.ts",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\types\\index.ts",
               "RelativeDocumentMoniker": "frontend\\src\\types\\index.ts",
@@ -122,12 +122,11 @@
               "RelativeToolTip": "frontend\\src\\types\\index.ts",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2025-12-03T12:25:07.821Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-03T12:25:07.821Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 11,
               "Title": "modelStore.ts",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\stores\\modelStore.ts",
               "RelativeDocumentMoniker": "frontend\\src\\stores\\modelStore.ts",
@@ -135,12 +134,11 @@
               "RelativeToolTip": "frontend\\src\\stores\\modelStore.ts",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAXAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2025-12-03T12:25:02.266Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-03T12:25:02.266Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 7,
               "Title": "Sidebar.tsx",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\Sidebar.tsx",
               "RelativeDocumentMoniker": "frontend\\src\\components\\Sidebar.tsx",
@@ -148,25 +146,23 @@
               "RelativeToolTip": "frontend\\src\\components\\Sidebar.tsx",
               "ViewState": "AgIAAHwAAAAAAAAAAADwv6MAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2025-11-21T15:21:53.648Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-21T15:21:53.648Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 3,
               "Title": "Header.tsx",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\Header.tsx",
               "RelativeDocumentMoniker": "frontend\\src\\components\\Header.tsx",
               "ToolTip": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\Header.tsx",
               "RelativeToolTip": "frontend\\src\\components\\Header.tsx",
-              "ViewState": "AgIAADMAAAAAAAAAAAAAAD4AAABqAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAA+AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2025-11-21T15:21:45.828Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-21T15:21:45.828Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 9,
               "Title": "ModelCard.tsx",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\ModelCard.tsx",
               "RelativeDocumentMoniker": "frontend\\src\\components\\ModelCard.tsx",
@@ -174,25 +170,23 @@
               "RelativeToolTip": "frontend\\src\\components\\ModelCard.tsx",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2025-11-21T15:21:27.416Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-21T15:21:27.416Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 2,
               "Title": "ModelGrid.tsx",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\ModelGrid.tsx",
               "RelativeDocumentMoniker": "frontend\\src\\components\\ModelGrid.tsx",
               "ToolTip": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\ModelGrid.tsx",
               "RelativeToolTip": "frontend\\src\\components\\ModelGrid.tsx",
-              "ViewState": "AgIAABYAAAAAAAAAAAAiwCwAAAAKAAAAAAAAAA==",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAABwAAAA5AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2025-11-21T15:21:15.187Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-21T15:21:15.187Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 4,
               "Title": "ModelInfo.tsx",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\ModelInfo.tsx",
               "RelativeDocumentMoniker": "frontend\\src\\components\\ModelInfo.tsx",
@@ -200,12 +194,11 @@
               "RelativeToolTip": "frontend\\src\\components\\ModelInfo.tsx",
               "ViewState": "AgIAAKQAAAAAAAAAAAAmwMkAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2025-11-21T15:19:32.565Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-21T15:19:32.565Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 6,
               "Title": "Chat.tsx",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\components\\Chat.tsx",
               "RelativeDocumentMoniker": "frontend\\src\\components\\Chat.tsx",
@@ -213,12 +206,11 @@
               "RelativeToolTip": "frontend\\src\\components\\Chat.tsx",
               "ViewState": "AgIAAOgAAAAAAAAAAAAmwAQBAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2025-11-21T15:19:13.186Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-21T15:19:13.186Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 8,
               "Title": "App.tsx",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\App.tsx",
               "RelativeDocumentMoniker": "frontend\\src\\App.tsx",
@@ -226,12 +218,11 @@
               "RelativeToolTip": "frontend\\src\\App.tsx",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAACUAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2025-11-21T15:23:30.765Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-21T15:23:30.765Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 5,
               "Title": "App.css",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\App.css",
               "RelativeDocumentMoniker": "frontend\\src\\App.css",
@@ -239,12 +230,11 @@
               "RelativeToolTip": "frontend\\src\\App.css",
               "ViewState": "AgIAAGEAAAAAAAAAAAAswIYAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
-              "WhenOpened": "2025-11-21T15:19:46.578Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-21T15:19:46.578Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 12,
               "Title": "client.ts",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\api\\client.ts",
               "RelativeDocumentMoniker": "frontend\\src\\api\\client.ts",
@@ -252,12 +242,11 @@
               "RelativeToolTip": "frontend\\src\\api\\client.ts",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAXAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2025-11-21T14:35:29.541Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-21T14:35:29.541Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 13,
               "Title": "utils.ts",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src\\lib\\utils.ts",
               "RelativeDocumentMoniker": "frontend\\src\\lib\\utils.ts",
@@ -265,36 +254,36 @@
               "RelativeToolTip": "frontend\\src\\lib\\utils.ts",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
-              "WhenOpened": "2025-12-03T12:25:12.755Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-03T12:25:12.755Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 1,
               "Title": "build.rs",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src-tauri\\build.rs",
               "RelativeDocumentMoniker": "frontend\\src-tauri\\build.rs",
               "ToolTip": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src-tauri\\build.rs",
               "RelativeToolTip": "frontend\\src-tauri\\build.rs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2025-11-21T14:44:01.813Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 0,
               "Title": "Cargo.toml",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src-tauri\\Cargo.toml",
               "RelativeDocumentMoniker": "frontend\\src-tauri\\Cargo.toml",
               "ToolTip": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\frontend\\src-tauri\\Cargo.toml",
               "RelativeToolTip": "frontend\\src-tauri\\Cargo.toml",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAA4AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2025-11-21T14:43:12.441Z"
+              "WhenOpened": "2025-11-21T14:43:12.441Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 14,
               "Title": "main.py",
               "DocumentMoniker": "E:\\Git-repos\\Dennett-AI-Agent-Hub\\apps\\ai_core\\ai_core\\main.py",
               "RelativeDocumentMoniker": "apps\\ai_core\\ai_core\\main.py",
@@ -302,8 +291,7 @@
               "RelativeToolTip": "apps\\ai_core\\ai_core\\main.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAAAAAAAAAAAA==",
               "Icon": "00000000-0000-0000-0000-000000000000.000000|iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAHeSURBVDhPpVMxa1NRFP7ebZLSlgaltNpSVCySRUxL0NAh4FJpHWpxcZAUBEPG/AKHDsVBN5eGrCnoYKCDoDiUCKKBjtZBUZtJ2ojYJr40ue\u002B\u002B47k3VzD0hQr94OOed8853/k47z2cCETk2NAgk8mQDQMhhFjK5/Mb9vEotIDruoEsFovEzVvZbPaWLTcQ9uxCpVLp4l\u002Bk0\u002BlEPB5/wIPm7RVC9uxCMpm0UTdKpRKi0WiCQy3wUt8FCvw7VSNxbRapG4voDwucGgyjXC7bzH84ePt1HysbH/GhWoNstzA1OoSFhZuxQqFg8sfu4FutAd\u002BT8KSEYm7v7GJ0YnLClgYLaAcjU9N4Vx9Dda8OBz7OjwywSNsIXY39vEL7TxWpxv2eO3hWHUZ19xc8ti25UdvXzdpNWH0BDj8JiLOrPXfweOu9mRgRhOXUEPr7IiBfYeacB9HaBNRvQH4f6\u002BlgMERwGxJP7grEoq9shj9Uz\u002BVGpmIi4vXcwdzlcePgzLAuZPiSGw869Jg\u002Biw1Mvw50oLGcuoh71y8h1HwB1Js8UfFLnwScNnBhdYVLWsy1IwK5XM5GHaw9uu0LeSCMddZA32lz7zjOQxMcByK1SPU3O/Rjnai2fkjNz8/5L77TyQJ/AJc67LNf3QeWAAAAAElFTkSuQmCC",
-              "WhenOpened": "2025-11-21T14:10:04.418Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-21T14:10:04.418Z"
             },
             {
               "$type": "Document",

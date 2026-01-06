@@ -1,0 +1,39 @@
+{
+  "productName": "Dennett",
+  "version": "0.1.0",
+  "identifier": "com.dennett.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://127.0.0.1:1420",
+    "frontendDist": "../dist"
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Dennett",
+        "width": 1400,
+        "height": 900,
+        "resizable": true,
+        "fullscreen": false,
+
+        "minWidth": 1100,
+        "minHeight": 720,
+
+        "transparent": true,
+        "decorations": false,
+        "shadow": false
+      }
+    ]
+  }
+}

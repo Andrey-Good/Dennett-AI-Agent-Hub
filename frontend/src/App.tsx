@@ -1,37 +1,61 @@
-﻿import { useState } from 'react';
-import { ModelGrid } from './components/ModelGrid';
-import { Sidebar } from './components/Sidebar';
-import { Chat } from './components/Chat';
-import './App.css';
+import * as React from "react";
 
-function App() {
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+import { WindowChrome } from "@/components/app/WindowChrome";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AppSidebar, type AppRoute } from "@/layout/AppSidebar";
+import { ChatWithModelPage } from "@/views/ChatWithModelPage";
+import { DashboardPage } from "@/views/DashboardPage";
+import { ModelDetailsPanel } from "@/views/ModelDetailsPanel";
+import { ModelHubPage } from "@/views/ModelHubPage";
+import { ModelSearchPage } from "@/views/ModelSearchPage";
+import { WorkflowBuilderPage } from "@/views/WorkflowBuilderPage";
 
-  const handleOpenChat = (modelId?: string) => {
-    console.log('handleOpenChat вызвана, modelId:', modelId);
-    if (modelId) {
-      setSelectedModel(modelId);
-    }
-    setIsChatOpen(true);
-  };
+/**
+ * Root UI: Taskplus-inspired (palette, typography and shadows).
+ */
+export default function App() {
+  const [activeRoute, setActiveRoute] = React.useState<AppRoute>("dashboard");
+  const [detailsOpen, setDetailsOpen] = React.useState(false);
 
   return (
-    <>
-      <div className="flex h-screen bg-[#0f1419]">
-        <Sidebar onChatOpen={handleOpenChat} />
-        <div className="flex-1">
-          <ModelGrid onChatOpen={handleOpenChat} />
-        </div>
+    /* Outer background (visible only in rounded corners / transparent window) */
+    <div className="h-screen w-screen bg-[#50504f]">
+      <div className="tp-window flex">
+        <WindowChrome />
+
+        <AppSidebar active={activeRoute} onChange={setActiveRoute} />
+
+        <main className="relative flex flex-1 flex-col bg-[hsl(var(--background))]">
+          <div className="h-full overflow-y-auto px-7 pb-6 pt-12">
+            {activeRoute === "dashboard" && <DashboardPage />}
+            {activeRoute === "modelHub" && <ModelHubPage onOpenDetails={() => setDetailsOpen(true)} />}
+            {activeRoute === "modelSearch" && (
+              <ModelSearchPage onOpenDetails={() => setDetailsOpen(true)} />
+            )}
+            {activeRoute === "workflow" && <WorkflowBuilderPage />}
+            {activeRoute === "chat" && <ChatWithModelPage />}
+            {activeRoute === "settings" && <SettingsPlaceholder />}
+          </div>
+        </main>
+
+        <ModelDetailsPanel open={detailsOpen} onClose={() => setDetailsOpen(false)} />
       </div>
-      
-      <Chat 
-        isOpen={isChatOpen} 
-        onClose={() => setIsChatOpen(false)}
-        selectedModel={selectedModel}
-      />
-    </>
+    </div>
   );
 }
 
-export default App;
+function SettingsPlaceholder() {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-base text-white">Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="text-[12px] leading-relaxed text-[hsl(var(--tp-muted))]">
+          Экран настроек можно расширить позже. Сейчас здесь оставлен экран-заглушка,
+          оформленный в стиле Taskplus.
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

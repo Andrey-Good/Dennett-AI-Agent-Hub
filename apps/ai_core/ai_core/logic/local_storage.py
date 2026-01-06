@@ -8,15 +8,9 @@ from datetime import datetime
 import logging
 import asyncio
 import aiofiles
-
-try:
-    from apps.ai_core.ai_core.db.models import LocalModel, ImportAction
-    from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
-    from apps.ai_core.ai_core.config.settings import config
-except ModuleNotFoundError:
-    from ai_core.db.models import LocalModel, ImportAction
-    from ai_core.logic.filesystem_manager import file_system_manager
-    from ai_core.config.settings import config
+from apps.ai_core.ai_core.db.models import LocalModel, ImportAction
+from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
+from apps.ai_core.ai_core.config.settings import config
 
 logger = logging.getLogger(__name__)
 

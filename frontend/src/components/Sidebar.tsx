@@ -1,12 +1,16 @@
-﻿// src/components/Sidebar.tsx
+// src/components/Sidebar.tsx
 import React from 'react';
 import { useModelStore } from '../stores/modelStore';
 
+export type AppView = 'models' | 'hub';
+
 interface SidebarProps {
   onChatOpen: (modelId?: string) => void;
+  activeView: AppView;
+  onNavigate: (view: AppView) => void;
 }
 
-export function Sidebar({ onChatOpen }: SidebarProps) {
+export function Sidebar({ onChatOpen, activeView, onNavigate }: SidebarProps) {
   const { filters, updateFilters, selectedModel } = useModelStore();
   const [activeTab, setActiveTab] = React.useState('main');
 
@@ -27,13 +31,32 @@ export function Sidebar({ onChatOpen }: SidebarProps) {
   return (
     <div className="w-[350px] bg-[#0d1117] flex h-screen border-r border-gray-800">
       <div className="w-16 flex flex-col items-center py-4 gap-4 border-r border-gray-800">
-        <button className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors" title="Microphone">
+        {/* Hub */}
+        <button
+          onClick={() => onNavigate('hub')}
+          className={`p-2 rounded transition-colors ${
+            activeView === 'hub'
+              ? 'text-white bg-gray-800'
+              : 'text-gray-400 hover:text-white hover:bg-gray-800'
+          }`}
+          title="Hub"
+        >
           <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
             <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5z"/>
             <path d="M10 8a2 2 0 1 1-4 0V3a2 2 0 1 1 4 0v5z"/>
           </svg>
         </button>
-        <button className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors" title="Search">
+
+        {/* Models */}
+        <button
+          onClick={() => onNavigate('models')}
+          className={`p-2 rounded transition-colors ${
+            activeView === 'models'
+              ? 'text-white bg-gray-800'
+              : 'text-gray-400 hover:text-white hover:bg-gray-800'
+          }`}
+          title="Models"
+        >
           <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
             <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
           </svg>

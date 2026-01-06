@@ -2,28 +2,16 @@ import pytest
 from unittest.mock import AsyncMock, patch, Mock
 
 # Import the classes to test
-try:
-    from apps.ai_core.ai_core.logic.huggingface_service import HuggingFaceService
-    from apps.ai_core.ai_core.db.models import (
-        ModelInfoShort,
-        ModelInfoDetailed,
-        GGUFProvider,
-        TaskType,
-        LicenseType,
-        SortType,
-        SearchFilters,
-    )
-except ModuleNotFoundError:
-    from ai_core.logic.huggingface_service import HuggingFaceService
-    from ai_core.db.models import (
-        ModelInfoShort,
-        ModelInfoDetailed,
-        GGUFProvider,
-        TaskType,
-        LicenseType,
-        SortType,
-        SearchFilters,
-    )
+from apps.ai_core.ai_core.logic.huggingface_service import HuggingFaceService
+from apps.ai_core.ai_core.db.models import (
+    ModelInfoShort,
+    ModelInfoDetailed,
+    GGUFProvider,
+    TaskType,
+    LicenseType,
+    SortType,
+    SearchFilters,
+)
 
 
 class MockHuggingFaceModel:

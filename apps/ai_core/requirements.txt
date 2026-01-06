@@ -5,7 +5,8 @@ python-multipart==0.0.6
 
 # Async HTTP client
 aiohttp==3.9.0
-aiofiles==23.2.0
+# 23.2.0 was yanked due to a Windows import issue.
+aiofiles==24.1.0
 
 # Hugging Face integration
 huggingface-hub==0.19.4

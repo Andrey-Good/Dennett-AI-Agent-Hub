@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { ModelCard } from './ModelCard';
 import { ModelInfo } from './ModelInfo';
 import { Header } from './Header';

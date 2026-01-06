@@ -6,32 +6,20 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 
-try:
-    from apps.ai_core.ai_core.config.settings import config
-    from apps.ai_core.ai_core.api import hub, downloads, local_models, storage, health
-    from apps.ai_core.ai_core.db.session import DatabaseConfig, initialize_database, get_database_manager
-    from apps.ai_core.ai_core.db.init_db import get_database_url
-    from apps.ai_core.ai_core.api.agents_api import router as agents_router
-    from apps.ai_core.ai_core.api.triggers_api import router as triggers_router, agent_triggers_router
-    from apps.ai_core.ai_core.logic.priority_policy import init_priority_policy, get_priority_policy
-    from apps.ai_core.ai_core.logic.trigger_manager import init_trigger_manager, get_trigger_manager
-    from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
-    from apps.ai_core.ai_core.workers.garbage_collector import init_garbage_collector
-    from apps.ai_core.ai_core.db.migrator import run_incremental_migrations
-except ModuleNotFoundError:
-    from ai_core.config.settings import config
-    from ai_core.api import hub, downloads, local_models, storage, health
-    from ai_core.db.session import DatabaseConfig, initialize_database, get_database_manager
-    from ai_core.db.init_db import get_database_url
-    from ai_core.api.agents_api import router as agents_router
-    from ai_core.api.triggers_api import router as triggers_router, agent_triggers_router
-    from ai_core.logic.priority_policy import init_priority_policy, get_priority_policy
-    from ai_core.logic.trigger_manager import init_trigger_manager, get_trigger_manager
-    from ai_core.logic.filesystem_manager import file_system_manager
-    from ai_core.workers.garbage_collector import init_garbage_collector
-    from ai_core.db.migrator import run_incremental_migrations
+from apps.ai_core.ai_core.config.settings import config
+from apps.ai_core.ai_core.api import hub, downloads, local_models, storage, health
+
+from apps.ai_core.ai_core.db.session import DatabaseConfig, initialize_database, get_database_manager
+from apps.ai_core.ai_core.db.init_db import get_database_url
+from apps.ai_core.ai_core.api.agents_api import router as agents_router
+
+from apps.ai_core.ai_core.logic.priority_policy import init_priority_policy, get_priority_policy
+from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
+from apps.ai_core.ai_core.workers.garbage_collector import init_garbage_collector
+from apps.ai_core.ai_core.db.migrator import run_incremental_migrations
+
+from contextlib import asynccontextmanager
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
@@ -48,10 +36,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting application...")
 
-    try:
-        from apps.ai_core.ai_core.api.dependencies import get_hf_service
-    except ModuleNotFoundError:
-        from ai_core.api.dependencies import get_hf_service
+    from apps.ai_core.ai_core.api.dependencies import get_hf_service
     service = await get_hf_service()
 
     try:
@@ -72,12 +57,10 @@ async def lifespan(app: FastAPI):
         logger.info("Incremental migrations completed")
 
         logger.info("Reading asset storage path from database settings...")
-        try:
-            from apps.ai_core.ai_core.logic.settings_service import SettingsService
-            from apps.ai_core.ai_core.db.session import get_database_manager
-        except ModuleNotFoundError:
-            from ai_core.logic.settings_service import SettingsService
-            from ai_core.db.session import get_database_manager
+        # NOTE: do NOT re-import get_database_manager inside this function.
+        # An import assignment would make it a local variable and would break
+        # earlier references (UnboundLocalError). We already import it at module level.
+        from apps.ai_core.ai_core.logic.settings_service import SettingsService
 
         db_manager = get_database_manager()
         session = db_manager.create_session()
@@ -156,35 +139,10 @@ async def lifespan(app: FastAPI):
         logger.error(f"AgentGarbageCollector initialization failed: {e}")
         # Non-fatal - continue without GC
 
-    # Start TriggerManager
-    trigger_manager = None
-    try:
-        logger.info("Starting TriggerManager...")
-        db_manager = get_database_manager()
-        trigger_manager = init_trigger_manager(
-            session_factory=db_manager.create_session,
-            reconcile_interval_sec=10,
-            max_crash_retries=3
-        )
-        await trigger_manager.start()
-        logger.info("TriggerManager started")
-
-    except Exception as e:
-        logger.error(f"TriggerManager initialization failed: {e}")
-        # Non-fatal - continue without TriggerManager
-
     yield
 
     # Shutdown
     logger.info("Shutting down application...")
-
-    # Stop TriggerManager first (graceful shutdown)
-    if trigger_manager is not None:
-        try:
-            await trigger_manager.stop()
-            logger.info("TriggerManager stopped")
-        except Exception as e:
-            logger.error(f"Error stopping TriggerManager: {e}")
 
     if aging_task is not None:
         aging_task.cancel()
@@ -237,8 +195,6 @@ app.include_router(local_models.router)
 app.include_router(storage.router)
 app.include_router(health.router)
 app.include_router(agents_router, prefix="/api", tags=["agents"])
-app.include_router(triggers_router, prefix="/api", tags=["triggers"])
-app.include_router(agent_triggers_router, prefix="/api", tags=["triggers"])
 
 if __name__ == "__main__":
     import uvicorn

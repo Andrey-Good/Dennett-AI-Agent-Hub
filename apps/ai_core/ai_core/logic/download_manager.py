@@ -7,15 +7,9 @@ from typing import Dict, Optional, AsyncGenerator
 from fastapi import BackgroundTasks
 from datetime import datetime
 import logging
-
-try:
-    from apps.ai_core.ai_core.db.models import DownloadStatus, DownloadState
-    from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
-    from apps.ai_core.ai_core.config.settings import config
-except ModuleNotFoundError:
-    from ai_core.db.models import DownloadStatus, DownloadState
-    from ai_core.logic.filesystem_manager import file_system_manager
-    from ai_core.config.settings import config
+from apps.ai_core.ai_core.db.models import DownloadStatus, DownloadState
+from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
+from apps.ai_core.ai_core.config.settings import config
 
 logger = logging.getLogger(__name__)
 

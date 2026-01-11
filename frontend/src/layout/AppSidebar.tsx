@@ -38,16 +38,14 @@ type Item = {
 
 const topItems: Item[] = [
   { id: "search", label: "Search", icon: Search, route: "modelSearch" },
-  { id: "ai", label: "Dennett AI", icon: Sparkles, route: "chat" },
-  { id: "templates", label: "Templates", icon: Folder, route: "workflow" },
+  { id: "ai", label: "Chat", icon: Sparkles, route: "chat" },
+  { id: "templates", label: "Node", icon: Folder, route: "workflow" },
   { id: "notifications", label: "Notification", icon: Bell },
 ];
 
 const mainItems: Item[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, route: "dashboard" },
-  { id: "inbox", label: "Inbox", icon: Inbox, route: "chat" },
-  { id: "project", label: "Project", icon: Folder, route: "modelHub" },
-  { id: "calendar", label: "Calendar", icon: CalendarDays, route: "workflow" },
+  { id: "project", label: "Hub", icon: Folder, route: "modelHub" },
   { id: "help", label: "Help & Center", icon: HelpCircle },
   { id: "settings", label: "Settings", icon: Settings, route: "settings" },
 ];

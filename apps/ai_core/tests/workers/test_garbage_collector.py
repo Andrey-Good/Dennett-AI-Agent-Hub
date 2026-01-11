@@ -15,22 +15,13 @@ from unittest.mock import Mock, patch, AsyncMock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-try:
-    from apps.ai_core.ai_core.db.orm_models import Base, Agent
-    from apps.ai_core.ai_core.db.repositories import AgentRepository, AgentDraftRepository
-    from apps.ai_core.ai_core.workers.garbage_collector import (
-        AgentGarbageCollector,
-        get_garbage_collector,
-        init_garbage_collector
-    )
-except ModuleNotFoundError:
-    from ai_core.db.orm_models import Base, Agent
-    from ai_core.db.repositories import AgentRepository, AgentDraftRepository
-    from ai_core.workers.garbage_collector import (
-        AgentGarbageCollector,
-        get_garbage_collector,
-        init_garbage_collector
-    )
+from apps.ai_core.ai_core.db.orm_models import Base, Agent
+from apps.ai_core.ai_core.db.repositories import AgentRepository, AgentDraftRepository
+from apps.ai_core.ai_core.workers.garbage_collector import (
+    AgentGarbageCollector,
+    get_garbage_collector,
+    init_garbage_collector
+)
 
 
 class TestAgentGarbageCollectorInit:

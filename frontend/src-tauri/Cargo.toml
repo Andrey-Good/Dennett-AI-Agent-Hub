@@ -4,13 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-rc.13", features = [] }
+# `tauri-build` versions on crates.io do not match the JS CLI cadence.
+# 2.5.3 is currently the newest tauri-build available on crates.io and works
+# with tauri 2.9.x.
+tauri-build = { version = "2.5.3", features = [] }
 
 [dependencies]
-tauri = { version = "2.0.0-rc.13", features = [] }
+# Pin to the same major+minor as the JS packages (2.9.x) to avoid blank-screen
+# issues caused by incompatible mixes of Tauri versions.
+tauri = { version = "2.9.0", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+# (Optional) DB dependencies that are already in the template.
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "migrate", "chrono", "uuid"] }
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1"

@@ -7,16 +7,10 @@ import uuid
 from fastapi import APIRouter, Depends, BackgroundTasks
 from fastapi.responses import StreamingResponse
 
-try:
-    from apps.ai_core.ai_core.db.models import DownloadRequest, DownloadResponse
-    from apps.ai_core.ai_core.logic.download_manager import DownloadManager
-    from apps.ai_core.ai_core.api.dependencies import get_download_manager
-    from apps.ai_core.ai_core.api.errors import handle_service_error
-except ModuleNotFoundError:
-    from ai_core.db.models import DownloadRequest, DownloadResponse
-    from ai_core.logic.download_manager import DownloadManager
-    from ai_core.api.dependencies import get_download_manager
-    from ai_core.api.errors import handle_service_error
+from apps.ai_core.ai_core.db.models import DownloadRequest, DownloadResponse
+from apps.ai_core.ai_core.logic.download_manager import DownloadManager
+from apps.ai_core.ai_core.api.dependencies import get_download_manager  # verify_token
+from apps.ai_core.ai_core.api.errors import handle_service_error
 
 
 logger = logging.getLogger(__name__)

@@ -4,16 +4,10 @@ from typing import List
 
 from fastapi import APIRouter, Query, Depends, HTTPException
 
-try:
-    from apps.ai_core.ai_core.db.models import LocalModel, ErrorResponse
-    from apps.ai_core.ai_core.logic.local_storage import LocalStorage
-    from apps.ai_core.ai_core.api.dependencies import get_local_storage
-    from apps.ai_core.ai_core.api.errors import handle_service_error
-except ModuleNotFoundError:
-    from ai_core.db.models import LocalModel, ErrorResponse
-    from ai_core.logic.local_storage import LocalStorage
-    from ai_core.api.dependencies import get_local_storage
-    from ai_core.api.errors import handle_service_error
+from apps.ai_core.ai_core.db.models import LocalModel, ErrorResponse
+from apps.ai_core.ai_core.logic.local_storage import LocalStorage
+from apps.ai_core.ai_core.api.dependencies import get_local_storage  # verify_token
+from apps.ai_core.ai_core.api.errors import handle_service_error
 
 
 logger = logging.getLogger(__name__)

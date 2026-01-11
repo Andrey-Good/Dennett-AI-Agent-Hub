@@ -5,7 +5,7 @@
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://127.0.0.1:1420",
     "frontendDist": "../dist"
   },
   "bundle": {
@@ -25,7 +25,14 @@
         "width": 1400,
         "height": 900,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+
+        "minWidth": 1100,
+        "minHeight": 720,
+
+        "transparent": true,
+        "decorations": false,
+        "shadow": false
       }
     ]
   }

@@ -16,14 +16,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-try:
-    from apps.ai_core.ai_core.db.orm_models import Base
-    import apps.ai_core.ai_core.db.session as session_module
-    from apps.ai_core.ai_core.api.agents_api import router
-except ModuleNotFoundError:
-    from ai_core.db.orm_models import Base
-    import ai_core.db.session as session_module
-    from ai_core.api.agents_api import router
+from apps.ai_core.ai_core.db.orm_models import Base
+import apps.ai_core.ai_core.db.session as session_module
+from apps.ai_core.ai_core.api.agents_api import router
 from fastapi import FastAPI
 
 

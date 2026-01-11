@@ -12,22 +12,13 @@ from pathlib import Path
 import logging
 from typing import Optional
 
-try:
-    from apps.ai_core.ai_core.db.session import (
-        DatabaseConfig,
-        initialize_database,
-        get_database_manager,
-    )
-    from apps.ai_core.ai_core.db.orm_models import Base
-    from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
-except ModuleNotFoundError:
-    from ai_core.db.session import (
-        DatabaseConfig,
-        initialize_database,
-        get_database_manager,
-    )
-    from ai_core.db.orm_models import Base
-    from ai_core.logic.filesystem_manager import file_system_manager
+from apps.ai_core.ai_core.db.session import (
+    DatabaseConfig,
+    initialize_database,
+    get_database_manager,
+)
+from apps.ai_core.ai_core.db.orm_models import Base
+from apps.ai_core.ai_core.logic.filesystem_manager import file_system_manager
 
 # Setup logging
 logging.basicConfig(
@@ -125,16 +116,10 @@ def seed_database() -> None:
     try:
         logger.info("Seeding database with sample data...")
         
-        try:
-            from apps.ai_core.ai_core.db.session import get_database_manager
-            from apps.ai_core.ai_core.db.repositories import (
-                AgentRepository, AgentRunRepository, AgentTestCaseRepository
-            )
-        except ModuleNotFoundError:
-            from ai_core.db.session import get_database_manager
-            from ai_core.db.repositories import (
-                AgentRepository, AgentRunRepository, AgentTestCaseRepository
-            )
+        from apps.ai_core.ai_core.db.session import get_database_manager
+        from apps.ai_core.ai_core.db.repositories import (
+            AgentRepository, AgentRunRepository, AgentTestCaseRepository
+        )
         
         db = get_database_manager()
         session = db.create_session()
@@ -199,18 +184,11 @@ def verify_database() -> bool:
     try:
         logger.info("Verifying database...")
 
-        try:
-            from apps.ai_core.ai_core.db.session import get_database_manager
-            from apps.ai_core.ai_core.db.orm_models import AgentRun
-            from apps.ai_core.ai_core.db.repositories import (
-                AgentRepository, AgentRunRepository, AgentTestCaseRepository
-            )
-        except ModuleNotFoundError:
-            from ai_core.db.session import get_database_manager
-            from ai_core.db.orm_models import AgentRun
-            from ai_core.db.repositories import (
-                AgentRepository, AgentRunRepository, AgentTestCaseRepository
-            )
+        from apps.ai_core.ai_core.db.session import get_database_manager
+        from apps.ai_core.ai_core.db.orm_models import AgentRun
+        from apps.ai_core.ai_core.db.repositories import (
+            AgentRepository, AgentRunRepository, AgentTestCaseRepository
+        )
 
         db = get_database_manager()
         session = db.create_session()

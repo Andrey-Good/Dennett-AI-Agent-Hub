@@ -13,8 +13,12 @@
     "format-fix": "prettier --write ."
   },
   "dependencies": {
+    "@radix-ui/react-scroll-area": "^1.2.0",
+    "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-slot": "^1.2.3",
-    "@tauri-apps/api": "^2.0.0",
+    "@radix-ui/react-switch": "^1.1.0",
+    "@radix-ui/react-tooltip": "^1.1.0",
+    "@tauri-apps/api": "2.9.0",
     "@tauri-apps/plugin-opener": "^2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -27,7 +31,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0",
+    "@tauri-apps/cli": "2.9.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@typescript-eslint/eslint-plugin": "^8.46.2",

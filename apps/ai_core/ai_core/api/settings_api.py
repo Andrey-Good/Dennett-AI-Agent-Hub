@@ -15,12 +15,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-try:
-    from apps.ai_core.ai_core.db.session import get_session
-    from apps.ai_core.ai_core.logic.settings_service import SettingsService, create_settings_service
-except ModuleNotFoundError:
-    from ai_core.db.session import get_session
-    from ai_core.logic.settings_service import SettingsService, create_settings_service
+from apps.ai_core.ai_core.db.session import get_session
+from apps.ai_core.ai_core.logic.settings_service import SettingsService, create_settings_service
 
 logger = logging.getLogger(__name__)
 
